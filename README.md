@@ -8,7 +8,7 @@ it is your voice, your context and your judgment. Those live in plain files that
 to you. This repo is the structure around them.
 
 ```bash
-git clone <this repo> && cd roger
+git clone git@github.com:nottgod/rogeralpha.git roger && cd roger
 npm run onboarding
 ```
 
