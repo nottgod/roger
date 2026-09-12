@@ -1,0 +1,10 @@
+{
+  "date": "2026-06-25",
+  "title": "lint conversation fail fixture",
+  "leads": [
+    {
+      "n": 1, "co": "AgencyTrap", "stage": "conversation",
+      "msg": "we are not an agency — we run growth and can 10x your reach. Best, Sam"
+    }
+  ]
+}

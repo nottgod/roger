@@ -1,0 +1,79 @@
+// intel.test.mjs — testes da camada Intelligence (Roger v5, F2).
+// REGRA: zero rede. As 3 APIs são mockadas via injeção de `deps` em collectIntel/runIntel.
+// Rodar: node --test scripts/roger/intel.test.mjs
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { runIntel, detectSignals, collectIntel } from './intel.mjs';
+
+const KEYS = { exaKey: 'fake', fundableKey: 'fake', firecrawlKey: 'fake' };
+const recentISO = new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(); // ~2 meses atrás
+
+// fábrica de deps mockadas
+function mockDeps(over = {}) {
+  return {
+    fundableLookup: async () => over.fundable ?? null,
+    findWebsiteViaExa: async () => over.website ?? null,
+    firecrawlScrape: async () => over.scraped ?? {},
+    exaPainPoint: async () => over.painPoint ?? null,
+    ...over.fns,
+  };
+}
+
+test('(a) funding recente + blog → timing forte, classify QUENTE', async () => {
+  const lead = {
+    name: 'Jane', company: 'NorthPay',
+    b2b2: true, web2Firm: true, geo: 'USA', decisorAcessivel: true,
+    budgetProvavel: 6000, segment: 'payments', headcount: 80,
+  };
+  const deps = mockDeps({
+    fundable: { name: 'NorthPay', dealDate: recentISO, numEmployees: 80, country: 'USA', website: 'https://northpay.example' },
+    scraped: { description: 'We just announced a new partnership and are hiring for marketing. Read our blog.', linkedinCompany: 'https://linkedin.com/company/acme' },
+    painPoint: 'struggling with awareness',
+  });
+  const r = await runIntel(lead, KEYS, deps);
+  assert.equal(r.tier, 'QUENTE');
+  assert.ok(r.timing.detected.includes('recentFunding'));
+  assert.ok(r.gap.needsJudgment.length >= 1);
+  assert.equal(r.sources.fundable, 'ok');
+});
+
+test('(b) fora do ICP → DESCARTE via score.mjs gate', async () => {
+  const lead = {
+    name: 'Bob', company: 'BigBank',
+    b2b2: false, web2Firm: true, geo: 'USA', decisorAcessivel: true,
+    budgetProvavel: 8000, segment: 'payments', nonIcpFlags: ['enterprise-bank'], headcount: 200,
+  };
+  const deps = mockDeps({ fundable: { name: 'BigBank', numEmployees: 200 } });
+  const r = await runIntel(lead, KEYS, deps);
+  assert.equal(r.tier, 'DESCARTE');
+  assert.match(r.reason, /não-ICP/);
+});
+
+test('(c) coleta falha (APIs retornam null) → report degrada sem crashar', async () => {
+  const lead = {
+    name: 'Carol', company: 'GhostCo',
+    b2b2: true, web2Firm: true, geo: 'UK', decisorAcessivel: true,
+    budgetProvavel: 5000, segment: 'marketplaces', headcount: 60,
+  };
+  const deps = mockDeps({ fundable: null, website: null, scraped: {}, painPoint: null });
+  const r = await runIntel(lead, KEYS, deps);
+  // não deve lançar; sources marcam falha/skip
+  assert.equal(r.sources.fundable, 'fail');
+  assert.equal(r.sources.firecrawl, 'skip'); // sem website, não chega no Firecrawl
+  assert.equal(r.sources.exa, 'fail');
+  assert.ok(['QUENTE', 'MORNO', 'FRIO'].includes(r.tier)); // ICP ok via lead → não DESCARTE
+});
+
+test('detectSignals: sem dados não inventa sinais objetivos', () => {
+  const r = detectSignals({ fundable: {}, scraped: {}, sources: { firecrawl: 'skip' }, painPoint: null });
+  assert.equal(Object.keys(r.timing).length, 0);
+  assert.equal(r.needsJudgment.length, 4);
+});
+
+test('collectIntel: lead sem company retorna shape vazio sem chamar coletores', async () => {
+  let called = false;
+  const deps = mockDeps({ fns: { fundableLookup: async () => { called = true; return null; } } });
+  const out = await collectIntel({}, KEYS, deps);
+  assert.equal(called, false);
+  assert.equal(out.sources.fundable, 'skip');
+});

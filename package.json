@@ -1,0 +1,24 @@
+{
+  "name": "roger",
+  "version": "0.1.0-alpha.1",
+  "description": "An open source AI SDR you build yourself. It writes in your voice, and you are the one who sends.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test scripts/roger/*.test.mjs scripts/roger/lib/*.test.mjs",
+    "doctor": "node scripts/roger/doctor.mjs",
+    "onboarding": "node scripts/roger/onboarding.mjs",
+    "panel": "node scripts/roger/painel-server.mjs",
+    "arm": "node scripts/roger/send-arm.mjs"
+  },
+  "keywords": [
+    "sdr",
+    "outbound",
+    "sales",
+    "open-source"
+  ]
+}

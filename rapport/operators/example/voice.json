@@ -1,0 +1,44 @@
+{
+  "_comment": "Fictional example. This is the machine-readable half of the voice: exactly what lint-voz.mjs enforces. The voice interview writes this file for you — do not hand-write it unless you want to.",
+
+  "language": "English",
+
+  "maxChars": 420,
+  "caps": { "default": 420, "connection": 300 },
+  "warnAboveChars": 380,
+  "warnBelowChars": 60,
+  "maxQuestions": 1,
+
+  "banEmDash": true,
+  "banEnDash": true,
+  "banEmoji": true,
+  "banEmojiFirstTouch": true,
+  "banExclamation": false,
+
+  "banFormalGreeting": false,
+  "banConsultantJargon": true,
+  "banVanityMetrics": true,
+  "allowHumanSlip": true,
+  "requireCleanGrammar": false,
+
+  "greeting": "Hey Ana,",
+  "signoff": "Best, Sam",
+  "signoffAllowedStages": ["inicial", "mensagem_inicial", "^mi$"],
+
+  "bannedWords": ["synergy", "leverage", "circle back", "touch base"],
+  "bannedPhrases": ["as per my last", "hope you are doing well", "at your earliest convenience"],
+
+  "ctaStyle": "question",
+  "callCta": {
+    "bannedIn": ["connection", "conex"],
+    "warnIfMissingIn": ["inicial", "mensagem_inicial", "^mi$"],
+    "minCharsForWarn": 160
+  },
+
+  "rules": [
+    "oral, the way I talk. contractions, short sentences",
+    "one light human imperfection per message is fine, it sounds like me",
+    "close with one open question worth answering",
+    "diagnostic tone: someone who noticed a detail, not a seller asking for time"
+  ]
+}
