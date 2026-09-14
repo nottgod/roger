@@ -225,7 +225,10 @@ const MARKET = [
   { key: 'sizeMax', q: 'And the largest (blank for no limit)' },
   { key: 'budgetFloor', q: 'Monthly budget below which it is not worth it, in USD (blank if you do not filter)' },
   { key: 'segments', q: 'The kinds of company you sell to, comma-separated (e.g. payments, marketplaces)' },
-  { key: 'nonIcp', q: 'Automatic passes — what makes you drop a lead on sight? Comma-separated' },
+  {
+    key: 'nonIcp',
+    q: 'What makes you drop a lead without even looking?\n  The deal breakers. Examples: no budget, wrong country, too small, a competitor,\n  nobody there can decide. Comma-separated',
+  },
   {
     key: 'dorCentral',
     q: 'In one line: what is broken for them BEFORE you show up?\n  Not what you sell, the pain. Example: "month close takes a week and nobody\n  trusts the number". Yours',
