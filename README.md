@@ -20,6 +20,17 @@ here because you were invited to find them. See [FEEDBACK.md](FEEDBACK.md).
 
 ---
 
+## How you use it
+
+Roger is not a tool you configure once. It is a handful of plain files that belong to
+you, and it gets better because **you** feed it: every time a message lands or falls
+flat, you learn something about how you sell — put it in the files. Nobody else is
+editing them, which is why no two Rogers write alike.
+
+The loop: you point it at a lead → it decides whether the lead is worth writing to →
+it researches what it can → it builds a briefing → **your model writes the message** →
+your voice guard checks it → you approve it → it gets sent.
+
 ## What it does
 
 1. **Learns your voice.** An interview, not a form. Your answers become

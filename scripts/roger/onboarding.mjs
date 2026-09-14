@@ -54,28 +54,50 @@ ${B('Roger that.')}
 `;
 
 // ── Tela 2 ────────────────────────────────────────────────────────────────────
+// Não é só "o que vem agora": é o MODELO DE USO. Quem não entende que os arquivos são
+// dela e que ela os alimenta com o tempo, usa uma vez e abandona.
 const HOW = `
-${B('How this goes')}
+${B('How this works')}
 
-  ${B('1. Your voice')}     ~25 min   I interview you. Nothing else works without this.
-  ${B('2. Your market')}    ~20 min   Who is worth a message, and who is a pass.
-  ${B('3. Your leads')}     ~10 min   A spreadsheet, or your CRM.
-  ${B('4. Your research')}   ~5 min   Two optional keys. They cost money, so they are yours to choose.
-  ${B('5. Your first one')}  ~5 min   A real lead, a real message, in your voice.
+I am not a form you fill in once. I am a handful of plain files that belong to you —
+your voice, your market, your templates. This interview is just the fastest way to
+write the first version of them.
 
-${D('Nothing is paid for and nothing is written to your CRM until all of it is done.')}
+${B('The loop, every day:')}
 
-${B('Two things you need, and I do not provide either:')}
+  1. you point me at a lead          ${D('a row in a spreadsheet, or your CRM')}
+  2. I decide if it is worth writing ${D('your ICP tables, not mine')}
+  3. I research what I can           ${D('needs your research keys')}
+  4. I build the briefing            ${D('diagnosis, culture, wording, real facts')}
+  5. ${B('your model writes it')}            ${D('Claude, ChatGPT, whichever you already pay for')}
+  6. your voice guard checks it      ${D('the rules this interview is about to write')}
+  7. you read it, fix it, approve it ${D('nothing goes out before this')}
+  8. it gets sent                    ${D('a browser I drive, on your account')}
 
-  ${B('A Claude or a ChatGPT.')} I decide who is worth writing to, research them, and build
-  the briefing. Your model writes the message from it. There is no model key in this
-  repo and there will not be — yours is already paid for.
+${B('Two things I do not provide, and will not:')}
 
-  ${B('Research keys')} (Exa, Firecrawl), paid by you. Without them I write from whatever
-  is in your spreadsheet, and I tell you so instead of pretending I did the homework.
+  ${B('A Claude or a ChatGPT.')} Step 5 is yours. There is no model key in this repo and
+  there will not be — yours is already paid for, and I am not going to make you buy a
+  second one.
+
+  ${B('Research keys')} (Exa, Firecrawl). Step 3 costs money, and the money is yours.
+  Without them I write from whatever your spreadsheet has, and I tell you so instead of
+  pretending I did the homework. The hook is what gets answered.
+
+${B('And the part most people miss:')} I get better because ${B('you')} feed me. Every time a
+message lands, or falls flat, you learn something about how you sell. Put it in the
+files. Nobody else is editing them, which is why no two Rogers write alike.
+
+${D('Today, the first version:')}
+
+  ${B('1. Your voice')}     ~25 min   ${D('I interview you. Nothing works without this.')}
+  ${B('2. Your market')}    ~20 min   ${D('Who is worth a message, and who is a pass.')}
+  ${B('3. Your leads')}     ~10 min   ${D('A spreadsheet, or your CRM.')}
+  ${B('4. Your stack')}      ~5 min   ${D('Where your model and your keys live.')}
 
 ${D('You can do the whole interview first and sort the keys out after. Nothing here needs them.')}
 `;
+
 
 // ── Tela 3: a entrevista de voz ───────────────────────────────────────────────
 const AXES = [
