@@ -1,6 +1,6 @@
 # Feedback
 
-You are one of three people using this before anyone else. The code is young: 222 tests
+You are one of three people using this before anyone else. The code is young: 226 tests
 cover the parts that could do damage, and everything else is a guess that needs your eyes.
 
 What is worth your time to report, in order:
