@@ -112,7 +112,7 @@ const AXES = [
   },
   {
     key: 'register',
-    q: 'And the register?',
+    q: 'And how formal are you?',
     options: [
       ['oral', 'Like I talk. Contractions, short sentences.'],
       ['direct', 'Professional and direct, no small talk.'],
@@ -334,7 +334,11 @@ export function renderPersona(a, cfg) {
 
 ## Voice
 - Grammar: ${label[a.grammar] ?? a.grammar}
-- Register: ${a.register}
+- Tone: ${{
+    oral: 'like you talk — contractions, short sentences',
+    direct: 'professional and direct, no small talk',
+    formal: 'formal, writing to senior people',
+  }[a.register] || a.register}
 - First message: ${a.length}, up to ${cfg.maxChars} characters
 - Opens with: ${[].concat(cfg.greeting || '(not recorded)').join(' · ')}
 ${cfg.signoff ? `- Signs off: ${cfg.signoff}` : '- Does not sign messages'}
