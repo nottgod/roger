@@ -32,7 +32,11 @@ npm test
 
 There is nothing to install — the core has zero dependencies, on purpose.
 
-**You got it right if:** the last lines say `pass 222` and `fail 0`.
+You will see a row of dots, one per test, and then a line saying they passed. Curious
+what each one checks? `npm run test:verbose`.
+
+**You got it right if:** the last line says the tests passed. If one fails it is named
+right there, with the reason — send me that.
 
 ## 3. Ask Roger what is missing
 

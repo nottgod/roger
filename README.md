@@ -15,7 +15,7 @@ npm run onboarding
 That interview is the whole idea: ~25 minutes of questions about how you actually write,
 and it produces the two files that drive everything — your voice and your market.
 
-**Status: private alpha.** It runs, it has 222 tests, and it has rough edges. You are
+**Status: private alpha.** It runs, it has 226 tests, and it has rough edges. You are
 here because you were invited to find them. See [FEEDBACK.md](FEEDBACK.md).
 
 ---
@@ -48,7 +48,7 @@ here because you were invited to find them. See [FEEDBACK.md](FEEDBACK.md).
 
 ```bash
 npm run doctor      # tells you exactly what is missing
-npm test            # 222 tests, no network
+npm test            # 226 tests, no network
 npm run onboarding  # the interview
 npm run panel       # read, edit, approve
 npm run arm         # send what you approved
