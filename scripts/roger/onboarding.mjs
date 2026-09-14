@@ -228,11 +228,11 @@ const MARKET = [
   { key: 'nonIcp', q: 'Automatic passes — what makes you drop a lead on sight? Comma-separated' },
   {
     key: 'dorCentral',
-    q: 'In one line: what is broken for them that you fix?\n  Not what you sell — what hurts before you show up',
+    q: 'In one line: what is broken for them BEFORE you show up?\n  Not what you sell, the pain. Example: "month close takes a week and nobody\n  trusts the number". Yours',
   },
   {
     key: 'vocab',
-    q: 'Words an insider in that market uses and an outsider would not.\n  This is what makes you sound credible in the first line. Comma-separated',
+    q: 'Now the words your BUYERS use among themselves — the ones that prove you have been\n  in the room. An outsider would use the wrong one, or none at all.\n  If you sold to payments teams: settlement file, chargeback, payout window.\n  If you sold to crypto teams: TVL, restaking, tokenomics, DevRel.\n  Yours, comma-separated',
   },
 ];
 
