@@ -574,7 +574,21 @@ async function main() {
   showSend();
   showClose(answers);
 
-  if (args.includes('--write')) {
+  // Salvar. A versão interativa PERGUNTA no fim, porque exigir a flag de antemão
+  // significava refazer 25 minutos de entrevista para quem não sabia dela.
+  let salvar = args.includes('--write');
+  if (!salvar && !args.includes('--demo') && process.stdin.isTTY) {
+    const rl2 = createInterface({ input: process.stdin, output: process.stdout });
+    try {
+      const resp = (await rl2.question(`\n${B('Save these to disk?')} ${D('[Y/n] ')}`)).trim().toLowerCase();
+      salvar = resp === '' || resp === 'y' || resp === 'yes' || resp === 's' || resp === 'sim';
+      if (!salvar) out(D('Nothing written. Run again with --write when you are ready.'));
+    } finally {
+      rl2.close();
+    }
+  }
+
+  if (salvar) {
     const opDir = join(ROOT, 'rapport', 'operators', answers.slug);
     await mkdir(opDir, { recursive: true });
     await writeFile(join(opDir, 'persona.md'), renderPersona(answers, cfg));
