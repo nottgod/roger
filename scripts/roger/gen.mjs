@@ -341,7 +341,9 @@ function buildOutboundBrief(input) {
       taskText,
       templateKey,
       template: templateKey ? contextTemplate(templateKey) : null,
-      templatesFile: join(RAPPORT, MSGS_FILE),
+      // relativo de propósito: este briefing é colado num chat, e caminho absoluto
+      // de outra máquina não ajuda ninguém.
+      templatesFile: `rapport/contexts/${CONTEXT}/${MSGS_FILE}`,
       rule: campanha
         ? 'campanha pré-pronta: usar o template (variar levemente, anti-blast). Cadência já semeada nos cards — NUNCA criar FUP nova'
         : (taskText ? 'seguir a instrução do texto da task (instrução do card manda)' : 'sem instrução no card: usar o ângulo do toque (padrão direto M1/M2, fechar chamando pra call)'),

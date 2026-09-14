@@ -363,6 +363,36 @@ const DEFAULT_GAP = [
 
 // O diagnóstico: a dor que abre toda mensagem, e o vocabulário que faz soar de dentro.
 // Sem este arquivo o briefing abre com "dor central não declarada", que parece defeito.
+// Os templates. O briefing aponta para este arquivo, então ele tem de existir — e com
+// a frase dela dentro, não com a de outra empresa.
+export function renderTemplates(a) {
+  const oQueVende = String(a.whatYouSell || '').trim() || '{what you do, in one sentence}';
+  return `# ${a.contextName || 'your context'} — message templates
+
+The engine reads the **first block quote** under each heading, so keep that shape.
+These are skeletons. \`{Nome}\` becomes the lead's first name; anything else in braces is
+a note to you, and the voice guard blocks it if it ever reaches a real message.
+
+## M1 — handshake (campaign only, no pitch)
+
+> Great to connect, {Nome}! I'll write to you shortly with some context on why I reached out.
+
+## M2 — the pitch, same thread
+
+> {Nome}, as promised, some context. ${oQueVende}. Worth a quick call this week?
+
+## M2-direto — first touch, no campaign
+
+> {Nome}, {one specific line about them}. ${oQueVende}. Open to a quick call this week?
+
+## Notes
+
+- One question per message. Two means neither gets answered.
+- The hook has to prove you looked. No hook, no message.
+- Never invent a number about them.
+`;
+}
+
 export function renderDiagnosis(a) {
   const segments = splitList(a.segments);
   const vocab = String(a.vocab || '').trim() || '(not declared yet — the words an insider would use)';
@@ -677,12 +707,14 @@ async function main() {
     await mkdir(ctxDir, { recursive: true });
     await writeFile(join(ctxDir, 'icp.md'), renderIcp(answers));
     await writeFile(join(ctxDir, 'diagnosis.md'), renderDiagnosis(answers));
+    await writeFile(join(ctxDir, 'mensagens.md'), renderTemplates(answers));
 
     const written = [
       `rapport/operators/${answers.slug}/persona.md`,
       `rapport/operators/${answers.slug}/voice.json`,
       `rapport/contexts/${ctxName}/icp.md`,
       `rapport/contexts/${ctxName}/diagnosis.md`,
+      `rapport/contexts/${ctxName}/mensagens.md`,
     ];
 
     if (answers.leadSource !== 'crm') {
