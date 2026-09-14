@@ -10,13 +10,14 @@
 // A tela 4 faz o mesmo com o ICP: as respostas viram as tabelas `.M` do icp.md que o
 // score.mjs parseia. Nada de gosto de ninguém volta para dentro do código.
 //
-// NÃO escreve nada sem --write. Zero dependências (só node:*), como o resto do core.
+// Gravar em disco é sempre decisão de quem responde: a versão interativa PERGUNTA no
+// fim, e os modos não interativos só gravam com --write. Zero dependências (só node:*).
 //
 // uso:
-//   node onboarding.mjs            a entrevista interativa
-//   node onboarding.mjs --demo     percorre tudo com respostas de exemplo
+//   node onboarding.mjs            a entrevista interativa (pergunta se quer salvar no fim)
+//   node onboarding.mjs --write    salva sem perguntar
+//   node onboarding.mjs --demo     percorre tudo com respostas de exemplo, sem gravar
 //   node onboarding.mjs --intro    só a tela 1
-//   node onboarding.mjs --write    grava persona.md, voice.json, icp.md e o modelo de planilha
 
 import { createInterface } from 'node:readline/promises';
 import { mkdir, writeFile } from 'node:fs/promises';
