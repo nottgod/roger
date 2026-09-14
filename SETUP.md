@@ -26,7 +26,7 @@ If it is missing or older: [nodejs.org](https://nodejs.org) (the LTS button), or
 ## 2. Get the code and check it
 
 ```bash
-git clone git@github.com:nottgod/rogeralpha.git roger && cd roger
+git clone https://github.com/nottgod/rogeralpha.git roger && cd roger
 npm test
 ```
 
