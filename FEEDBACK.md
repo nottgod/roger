@@ -47,8 +47,9 @@ Not worth reporting, they are on the list:
   interview; the shipped one is a reference.
 - There is no CRM adapter other than Kommo yet. The spreadsheet path is the intended one
   for now.
-- The engine is documented in Portuguese in `docs/` and speaks English to you. That
-  asymmetry is real and it is being fixed.
+- The code comments and the test names are in Portuguese, while everything written for
+  you is in English. It is the author's first language showing through. Real, known, and
+  it does not affect anything you run.
 - Sending needs Playwright installed separately and a manual LinkedIn login. That is
   deliberate, not an oversight.
 

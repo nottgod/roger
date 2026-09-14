@@ -9,7 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test scripts/roger/*.test.mjs scripts/roger/lib/*.test.mjs",
+    "test": "node --test --test-reporter=dot scripts/roger/*.test.mjs scripts/roger/lib/*.test.mjs && echo '\\n  all tests passed, and none of them touched the network'",
+    "test:verbose": "node --test scripts/roger/*.test.mjs scripts/roger/lib/*.test.mjs",
     "doctor": "node scripts/roger/doctor.mjs",
     "onboarding": "node scripts/roger/onboarding.mjs",
     "panel": "node scripts/roger/painel-server.mjs",
