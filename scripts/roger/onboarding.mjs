@@ -64,6 +64,17 @@ ${B('How this goes')}
   ${B('5. Your first one')}  ~5 min   A real lead, a real message, in your voice.
 
 ${D('Nothing is paid for and nothing is written to your CRM until all of it is done.')}
+
+${B('Two things you need, and I do not provide either:')}
+
+  ${B('A Claude or a ChatGPT.')} I decide who is worth writing to, research them, and build
+  the briefing. Your model writes the message from it. There is no model key in this
+  repo and there will not be — yours is already paid for.
+
+  ${B('Research keys')} (Exa, Firecrawl), paid by you. Without them I write from whatever
+  is in your spreadsheet, and I tell you so instead of pretending I did the homework.
+
+${D('You can do the whole interview first and sort the keys out after. Nothing here needs them.')}
 `;
 
 // ── Tela 3: a entrevista de voz ───────────────────────────────────────────────
@@ -171,6 +182,14 @@ const MARKET = [
   { key: 'budgetFloor', q: 'Monthly budget below which it is not worth it, in USD (blank if you do not filter)' },
   { key: 'segments', q: 'The kinds of company you sell to, comma-separated (e.g. payments, marketplaces)' },
   { key: 'nonIcp', q: 'Automatic passes — what makes you drop a lead on sight? Comma-separated' },
+  {
+    key: 'dorCentral',
+    q: 'In one line: what is broken for them that you fix?\n  Not what you sell — what hurts before you show up',
+  },
+  {
+    key: 'vocab',
+    q: 'Words an insider in that market uses and an outsider would not.\n  This is what makes you sound credible in the first line. Comma-separated',
+  },
 ];
 
 // ── Tela 5: de onde vêm os leads ──────────────────────────────────────────────
@@ -234,6 +253,8 @@ const DEMO = {
   story: 'Grew up in Naples, sold restaurant equipment before software. I talk fast.',
   slug: 'sam',
   contextName: 'ledgerline',
+  dorCentral: 'Month close takes a week and nobody fully trusts the number',
+  vocab: 'settlement file, chargeback, payout window, suspense account',
   whatYouSell: 'reconciliation software for fintech finance teams',
   geoAccept: 'United States, United Kingdom, Germany, Singapore',
   geoDiscard: 'Russia',
@@ -339,6 +360,42 @@ const DEFAULT_GAP = [
   ['founderInvisible', 'Founder is invisible in the market'],
   ['inconsistentStory', 'Site and founder tell different stories'],
 ];
+
+// O diagnóstico: a dor que abre toda mensagem, e o vocabulário que faz soar de dentro.
+// Sem este arquivo o briefing abre com "dor central não declarada", que parece defeito.
+export function renderDiagnosis(a) {
+  const segments = splitList(a.segments);
+  const vocab = String(a.vocab || '').trim() || '(not declared yet — the words an insider would use)';
+  const dor = String(a.dorCentral || '').trim()
+    || '(not declared yet — one line on what is broken for them before you show up)';
+  const linhas = (segments.length ? segments : ['default']).map(
+    (s) => `| **${s}** | ${dor} | ${vocab} |`,
+  ).join('\n');
+
+  return `# ${a.contextName || 'your context'} — diagnosis
+
+The pain you fix, and the words that make you sound like an insider. Read at runtime by
+the generator: the \`3.9.M\` table opens the diagnosis of every message, and \`3.12\` gives
+the vocabulary for the segment.
+
+## 3.9.M. The central pain (read by gen.mjs)
+
+One line, no \`|\`.
+
+| key | value |
+| --- | --- |
+| dor_central | ${dor} |
+
+## 3.12. Vocabulary and narrative by segment
+
+Start with one row per segment, all sharing what you told the interview. **Refine them
+one at a time** — the narrative column is where the message stops sounding generic.
+
+| Segmento | Narrativa-chave (1 linha) | Vocabulário pra soar crível |
+| --- | --- | --- |
+${linhas}
+`;
+}
 
 export function renderIcp(a) {
   const accept = splitList(a.geoAccept);
@@ -619,11 +676,13 @@ async function main() {
     const ctxDir = join(ROOT, 'rapport', 'contexts', ctxName);
     await mkdir(ctxDir, { recursive: true });
     await writeFile(join(ctxDir, 'icp.md'), renderIcp(answers));
+    await writeFile(join(ctxDir, 'diagnosis.md'), renderDiagnosis(answers));
 
     const written = [
       `rapport/operators/${answers.slug}/persona.md`,
       `rapport/operators/${answers.slug}/voice.json`,
       `rapport/contexts/${ctxName}/icp.md`,
+      `rapport/contexts/${ctxName}/diagnosis.md`,
     ];
 
     if (answers.leadSource !== 'crm') {

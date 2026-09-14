@@ -13,6 +13,7 @@
     "test:verbose": "node --test scripts/roger/*.test.mjs scripts/roger/lib/*.test.mjs",
     "doctor": "node scripts/roger/doctor.mjs",
     "onboarding": "node scripts/roger/onboarding.mjs",
+    "draft": "node scripts/roger/draft.mjs",
     "panel": "node scripts/roger/painel-server.mjs",
     "arm": "node scripts/roger/send-arm.mjs"
   },

@@ -41,15 +41,17 @@ here because you were invited to find them. See [FEEDBACK.md](FEEDBACK.md).
 
 | | |
 |---|---|
-| **Required** | Node 22 or newer. That's it — the core has zero dependencies. |
+| **Node 22 or newer** | The core itself has zero dependencies. |
+| **A Claude or a ChatGPT** | **Required.** Roger does not write the message: it decides who is worth writing to, researches them, and builds the briefing. Your model writes from it. There is no model key in this repo and there will not be — yours is already paid for, and you should not have to buy a second one. |
+| **Research keys** | **Required in practice.** [Exa](https://dashboard.exa.ai) and [Firecrawl](https://firecrawl.dev), paid by you. Without them Roger writes from whatever is in your spreadsheet, and tells you so. The hook is the difference between a message that gets answered and one that does not. |
 | **Your leads** | A CSV works (`name,company,country,...` — English or Portuguese headers). A Kommo CRM also works. |
-| **Optional** | [Exa](https://dashboard.exa.ai) and [Firecrawl](https://firecrawl.dev) keys for research. They cost money, so they are yours to choose. |
 | **To send** | `npm i playwright && npx playwright install chromium`, plus logging into LinkedIn by hand once, in a window Roger opens. |
 
 ```bash
 npm run doctor      # tells you exactly what is missing
 npm test            # 226 tests, no network
 npm run onboarding  # the interview
+npm run draft       # the briefing, ready to paste into your model
 npm run panel       # read, edit, approve
 npm run arm         # send what you approved
 ```
