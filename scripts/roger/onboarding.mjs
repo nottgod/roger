@@ -121,9 +121,18 @@ const AXES = [
 ];
 
 const FREE = [
-  { key: 'greeting', q: 'Type your real opening line, exactly as you write it (e.g. "Hey Ana,")' },
-  { key: 'signoff', q: 'And how you sign off' },
-  { key: 'banned', q: 'Words you would never say. Comma-separated' },
+  {
+    key: 'greeting',
+    q: 'How do you open a message? Paste real openings, not a template.\n  More than one is better — separate them with a semicolon',
+  },
+  {
+    key: 'signoff',
+    q: 'Do you sign your messages? If you do, paste your sign-off.\n  Most people do not sign a DM — press Enter to skip',
+  },
+  {
+    key: 'banned',
+    q: 'Seller words you would never use. Not swearing — the vendor vocabulary that makes\n  a message sound like every other message. Examples: synergy, circle back, touch base,\n  leverage, at your earliest convenience. Comma-separated',
+  },
   { key: 'language', q: 'What language do you sell in?' },
 ];
 
@@ -254,8 +263,8 @@ export function toVoiceConfig(a) {
     caps: { default: maxChars, connection: 300 },
     maxQuestions: 1,
     ctaStyle: a.cta,
-    greeting: a.greeting,
-    signoff: a.signoff,
+    greeting: splitSemi(a.greeting),
+    signoff: String(a.signoff || '').trim() || null,
     bannedWords: splitList(a.banned),
     bannedPhrases: [],
     rules: voiceRulesFrom(a),
@@ -284,8 +293,8 @@ export function renderPersona(a, cfg) {
 - Grammar: ${label[a.grammar] ?? a.grammar}
 - Register: ${a.register}
 - First message: ${a.length}, up to ${cfg.maxChars} characters
-- Opens with: ${a.greeting}
-- Signs off: ${a.signoff}
+- Opens with: ${[].concat(cfg.greeting || '(not recorded)').join(' · ')}
+${cfg.signoff ? `- Signs off: ${cfg.signoff}` : '- Does not sign messages'}
 - Closes with: ${a.cta === 'question' ? 'a question worth answering' : 'a direct invitation'}
 - Language: ${a.language}
 
@@ -303,6 +312,14 @@ ${a.story || '(not recorded yet)'}
 // ── Da entrevista para as tabelas .M do icp.md ────────────────────────────────
 function splitList(s) {
   return String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
+}
+
+// Aberturas: uma pessoa abre de vários jeitos, e insistir numa só perde informação.
+// Uma virou string; várias viram lista.
+function splitSemi(s) {
+  const partes = String(s || '').split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
+  if (!partes.length) return null;
+  return partes.length === 1 ? partes[0] : partes;
 }
 
 const slugify = (s) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -539,6 +556,9 @@ ${B('That is the setup.')} What comes next, in order:
 
 Your voice lives in ${D(`rapport/operators/${a.slug}/`)} and your market in ${D(`rapport/contexts/${a.contextName || 'my-context'}/`)}.
 Both are plain files. Change them whenever you learn something about how you sell.
+
+${D('Read yours back (there is also an example operator in that folder — this is the one that is yours):')}
+  ${B(`cat rapport/operators/${a.slug}/persona.md`)}
 
 ${B('Roger that.')}
 `);
