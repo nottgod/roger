@@ -153,6 +153,28 @@ const AXES = [
   },
 ];
 
+// O canal vem primeiro porque muda o resto: numa DM quase ninguém assina, num e-mail
+// quase todo mundo assina, e o braço de envio hoje só dirige o LinkedIn.
+const CHANNEL = {
+  key: 'channels',
+  q: 'Where do you write to people?',
+  options: [
+    ['linkedin', 'LinkedIn, mostly.'],
+    ['email', 'Email, mostly.'],
+    ['both', 'Both, depending on the person.'],
+  ],
+};
+
+// A pergunta da assinatura depende do canal: no LinkedIn ela quase nunca existe.
+function freeQuestions(channels) {
+  const assinatura = channels === 'linkedin'
+    ? 'Do you sign a LinkedIn message? Most people do not.\n  Press Enter to skip'
+    : (channels === 'email'
+      ? 'How do you sign off an email? Paste it exactly as it goes out'
+      : 'How do you sign off? Paste it as it goes out on email.\n  Press Enter if you do not sign');
+  return FREE.map((f) => (f.key === 'signoff' ? { ...f, q: assinatura } : f));
+}
+
 const FREE = [
   {
     key: 'greeting',
@@ -255,6 +277,9 @@ LinkedIn by hand once, in a window I open, and that session stays yours alone.
   ${B('The rhythm is not negotiable.')}  A random pause between messages, a daily cap per
   account, one touch per lead per day. Speed is not permission to send more.
 
+  ${B('Today that browser drives LinkedIn.')}  If you sell by email too, everything up to
+  the draft works the same — the sending part is still yours to do.
+
   ${B('I write down what I am about to do before I do it.')}  If the machine dies
   mid-send, the next run knows exactly what may have gone out.
 `;
@@ -273,6 +298,7 @@ const DEMO = {
   language: 'English',
   samples: ['saw you shipped the audit last week. how are you handling the reruns?'],
   story: 'Grew up in Naples, sold restaurant equipment before software. I talk fast.',
+  channels: 'linkedin',
   slug: 'sam',
   contextName: 'ledgerline',
   dorCentral: 'Month close takes a week and nobody fully trusts the number',
@@ -293,6 +319,7 @@ export function toVoiceConfig(a) {
   const maxChars = { short: 420, medium: 600, long: 900 }[a.length] ?? 600;
   return {
     language: a.language,
+    channels: a.channels || 'linkedin',
     maxChars,
     // O ponto do design: a resposta da pessoa liga e desliga regra.
     allowHumanSlip: a.grammar !== 'impeccable',
@@ -333,6 +360,7 @@ export function renderPersona(a, cfg) {
   return `# Operator — ${a.slug}
 
 ## Voice
+- Writes on: ${{ linkedin: 'LinkedIn', email: 'email', both: 'LinkedIn and email' }[a.channels] || 'LinkedIn'}
 - Grammar: ${label[a.grammar] ?? a.grammar}
 - Tone: ${{
     oral: 'like you talk — contractions, short sentences',
@@ -571,8 +599,9 @@ async function interview(rl) {
   const a = {};
 
   // tela 3
+  a.channels = await askChoice(rl, CHANNEL);
   for (const axis of AXES) a[axis.key] = await askChoice(rl, axis);
-  await askFree(rl, FREE, a);
+  await askFree(rl, freeQuestions(a.channels), a);
   out(SOUND);
   a.samples = await askLines(rl);
   out(SOUL);
