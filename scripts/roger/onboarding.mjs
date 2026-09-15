@@ -167,11 +167,15 @@ const CHANNEL = {
 
 // A pergunta da assinatura depende do canal: no LinkedIn ela quase nunca existe.
 function freeQuestions(channels) {
-  const assinatura = channels === 'linkedin'
-    ? 'Do you sign a LinkedIn message? Most people do not.\n  Press Enter to skip'
-    : (channels === 'email'
-      ? 'How do you sign off an email? Paste it exactly as it goes out'
-      : 'How do you sign off? Paste it as it goes out on email.\n  Press Enter if you do not sign');
+  // Um sign-off é a linha de fecho com o nome — "Best, Ana". NÃO é a última frase da
+  // mensagem: no primeiro teste real alguém escreveu uma frase de fechamento inteira
+  // aqui, e ela virou "assinatura". Por isso a pergunta mostra o que é.
+  const oQueE = 'A sign-off is the closing name line: "Best, Ana", "Sincerely, Ana",\n  "Cheers, Ana". It is not the last sentence of your message.';
+  const assinatura = {
+    linkedin: `${oQueE}\n  On LinkedIn almost nobody uses one. Do you? Press Enter for no, or paste yours`,
+    email: `How do you sign off an email?\n  ${oQueE}\n  Paste yours, exactly as it goes out`,
+    both: `How do you sign off on EMAIL?\n  ${oQueE}\n  On LinkedIn you probably do not, and that is fine.\n  Press Enter if you never sign`,
+  }[channels] || `${oQueE}\n  Do you use one? Press Enter for no, or paste yours`;
   return FREE.map((f) => (f.key === 'signoff' ? { ...f, q: assinatura } : f));
 }
 
