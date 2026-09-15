@@ -25,28 +25,13 @@ If it is missing or older: [nodejs.org](https://nodejs.org) (the LTS button), or
 
 ## 2. Get the code
 
-This repo is **private**, so you need to be signed in to GitHub and have accepted the
-invitation. Pick whichever of these is least painful for you.
-
-**a. Download it, no git needed** — the simplest, and enough for testing:
-on the repo page, the green **Code** button → **Download ZIP**. Unzip it, then in a
-terminal `cd` into the folder.
-
-**b. With the GitHub CLI**, if you have it or do not mind installing it:
-
-```bash
-gh auth login          # once, follow the prompts
-gh repo clone nottgod/rogeralpha roger && cd roger
-```
-
-**c. Plain git**, if your machine is already set up with GitHub:
-
 ```bash
 git clone https://github.com/nottgod/rogeralpha.git roger && cd roger
 ```
 
-If (c) asks you for a username and password, stop — GitHub stopped accepting passwords
-years ago. Use (a) or (b) instead. That prompt is not you doing something wrong.
+No git on your machine, or that command is a hassle? On the repo page, the green **Code**
+button → **Download ZIP**, unzip it, and `cd` into the folder. Everything below works the
+same — you just will not get updates with `git pull`.
 
 ## 3. Check that it runs
 

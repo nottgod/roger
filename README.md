@@ -15,8 +15,10 @@ npm run onboarding
 That interview is the whole idea: ~25 minutes of questions about how you actually write,
 and it produces the two files that drive everything — your voice and your market.
 
-**Status: private alpha.** It runs, it has 226 tests, and it has rough edges. You are
-here because you were invited to find them. See [FEEDBACK.md](FEEDBACK.md).
+**Status: early alpha, in testing.** It runs and it has 226 tests, and it also has rough
+edges that a handful of people are finding right now. If you wandered in here on your own:
+this is not finished, and the polished version will live somewhere else. If you were sent
+here on purpose, see [FEEDBACK.md](FEEDBACK.md) — the rough edges are what I want.
 
 ---
 
