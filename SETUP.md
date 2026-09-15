@@ -23,10 +23,34 @@ If it is missing or older: [nodejs.org](https://nodejs.org) (the LTS button), or
 
 **You got it right if:** the command prints `v22` or higher.
 
-## 2. Get the code and check it
+## 2. Get the code
+
+This repo is **private**, so you need to be signed in to GitHub and have accepted the
+invitation. Pick whichever of these is least painful for you.
+
+**a. Download it, no git needed** — the simplest, and enough for testing:
+on the repo page, the green **Code** button → **Download ZIP**. Unzip it, then in a
+terminal `cd` into the folder.
+
+**b. With the GitHub CLI**, if you have it or do not mind installing it:
+
+```bash
+gh auth login          # once, follow the prompts
+gh repo clone nottgod/rogeralpha roger && cd roger
+```
+
+**c. Plain git**, if your machine is already set up with GitHub:
 
 ```bash
 git clone https://github.com/nottgod/rogeralpha.git roger && cd roger
+```
+
+If (c) asks you for a username and password, stop — GitHub stopped accepting passwords
+years ago. Use (a) or (b) instead. That prompt is not you doing something wrong.
+
+## 3. Check that it runs
+
+```bash
 npm test
 ```
 
@@ -38,7 +62,7 @@ what each one checks? `npm run test:verbose`.
 **You got it right if:** the last line says the tests passed. If one fails it is named
 right there, with the reason — send me that.
 
-## 3. Ask Roger what is missing
+## 4. Ask Roger what is missing
 
 ```bash
 npm run doctor
@@ -49,7 +73,7 @@ It never prints a key, only the last four characters, and it never buys anything
 **You got it right if:** you see a list of warnings about things you have not set up yet,
 and `0 blocking`.
 
-## 4. The voice interview
+## 5. The voice interview
 
 ```bash
 npm run onboarding
@@ -67,7 +91,7 @@ node scripts/roger/onboarding.mjs --write
 **You got it right if:** `rapport/operators/<you>/persona.md` exists and reading it feels
 like looking in a mirror. If it does not, run it again — nothing is lost.
 
-## 5. Point Roger at yourself
+## 6. Point Roger at yourself
 
 ```bash
 export ROGER_OPERATOR=<your-slug>     # the folder name from step 4
@@ -79,7 +103,7 @@ Put those two lines in your shell profile so you do not repeat them.
 **You got it right if:** `npm run doctor` now says `operator "<you>"` and
 `context "<you>"` with a green ok.
 
-## 6. Your leads
+## 7. Your leads
 
 **From a spreadsheet (the simple path):** export a CSV. Headers can be in English or
 Portuguese — `name`/`nome`, `company`/`empresa`, `country`/`país`. Extra columns are kept,
@@ -92,7 +116,7 @@ which records are yours, Roger refuses to touch the CRM at all.
 **You got it right if:** `npm run doctor` reports the CRM as reachable, or you have a CSV
 you can point at.
 
-## 7. Research keys (optional, and they cost money)
+## 8. Research keys (yours, and they cost money)
 
 In `.env`:
 
@@ -107,7 +131,7 @@ records what it spent in `.roger/costs.jsonl`.
 **You got it right if:** `npm run doctor` says both keys were accepted. It validates them
 with a deliberately empty request, so checking costs nothing.
 
-## 8. Read, edit, approve
+## 9. Read, edit, approve
 
 ```bash
 npm run panel leads.csv
@@ -122,7 +146,7 @@ sends it back to you for another look.
 **You got it right if:** the header counts your approvals, and
 `curl -s 127.0.0.1:4242/approved` shows exactly what you approved, with your edits.
 
-## 9. Sending (do this last, and only when you mean it)
+## 10. Sending (do this last, and only when you mean it)
 
 ```bash
 npm i playwright && npx playwright install chromium
