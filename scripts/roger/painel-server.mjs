@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
 import { kget, kpost, kpatch, USER_ID, TASK_TYPE } from './kommo-config.mjs';
+import { readLeadsFile } from './lib/leads-file.mjs';
 import { loadCadencia, nextValidDate, endOfDayBRT } from './cadencia.mjs';
 import {
   createState, applyAction, sendable, counters, entryFor, finalText,
@@ -45,7 +46,40 @@ const MAX_BODY = 256 * 1024;
 const batchFile = process.argv[2];
 if (!batchFile) { console.error('uso: node painel-server.mjs <batch.json>'); process.exit(1); }
 
-const batch = JSON.parse(readFileSync(resolve(batchFile), 'utf8'));
+// O painel aceita DOIS formatos: um batch pronto (JSON) ou a sua PLANILHA de leads.
+// A planilha existe porque nada no projeto gerava o batch: quem tinha a mensagem escrita
+// pelo modelo não tinha como colocá-la aqui sem escrever JSON à mão.
+const batch = carregarBatch(resolve(batchFile));
+
+function carregarBatch(caminho) {
+  if (/\.csv$/i.test(caminho)) return batchDaPlanilha(caminho);
+  const cru = JSON.parse(readFileSync(caminho, 'utf8'));
+  if (Array.isArray(cru?.leads)) return cru;
+  return batchDaPlanilha(caminho); // JSON de leads, no formato da planilha
+}
+
+function batchDaPlanilha(caminho) {
+  const { leads, errors, warnings } = readLeadsFile(caminho);
+  for (const e of errors) console.error(`  ✗ ${e}`);
+  for (const w of warnings) console.error(`  ⚠ ${w}`);
+  if (!leads.length) { console.error('nenhum lead legível nesse arquivo'); process.exit(1); }
+  return {
+    date: new Date().toISOString().slice(0, 10),
+    title: `${leads.length} leads de ${caminho.split('/').pop()}`,
+    // msg vazia de propósito: você cola a mensagem que o seu modelo escreveu, aqui na tela.
+    leads: leads.map((l, i) => ({
+      n: i + 1,
+      co: l.company || l.name || '(sem nome)',
+      who: [l.name, l.role].filter(Boolean).join(' · '),
+      url: l.linkedin || l.website || '',
+      msg: '',
+      stage: l.stage || 'MENSAGEM_INICIAL',
+      taskId: l.taskId ?? null,
+      leadId: l.leadId ?? null,
+      note: l.notes || '',
+    })),
+  };
+}
 const LOGDIR = join(dirname(fileURLToPath(import.meta.url)), 'logs');
 mkdirSync(LOGDIR, { recursive: true });
 const STATE_FILE = join(LOGDIR, `painel-state-${batch.date}.json`);
@@ -96,6 +130,12 @@ async function hasOpenFup(leadId, excludeTaskId) {
 
 async function markSent(item, text) {
   const result = { steps: [] };
+  // Quem veio de planilha não tem CRM. Registrar local e seguir é o certo: tentar
+  // escrever num CRM que não existe seria erro na cara de quem só queria mandar.
+  if (!item.taskId && !item.leadId) {
+    result.steps.push('sem CRM neste lead: registrado só aqui e no log local');
+    return result;
+  }
   // dia de envio = dia BRT (não UTC) — envio às 23h BRT ainda conta como hoje
   const nowBRT = new Date(Date.now() - 3 * 3600_000);
   const today = new Date(Date.UTC(nowBRT.getUTCFullYear(), nowBRT.getUTCMonth(), nowBRT.getUTCDate(), 12, 0, 0));
@@ -145,6 +185,10 @@ async function markSent(item, text) {
 
 async function markReplied(item) {
   const result = { steps: [] };
+  if (!item.taskId && !item.leadId) {
+    result.steps.push('sem CRM neste lead: registrado só aqui');
+    return result;
+  }
   await guardOwnership(item);
   if (!DRY) {
     await kpatch(`/tasks/${item.taskId}`, { is_completed: true, result: { text: 'lead respondeu — o humano assume a conversa' } });

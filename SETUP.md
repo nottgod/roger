@@ -110,10 +110,12 @@ with a deliberately empty request, so checking costs nothing.
 ## 8. Read, edit, approve
 
 ```bash
-npm run panel path/to/batch.json
+npm run panel leads.csv
 ```
 
-Opens on `127.0.0.1:4242` — your machine only, never the network. Read each message, fix
+Opens on `127.0.0.1:4242` — your machine only, never the network. Point it at the same
+spreadsheet: each lead becomes a card with an empty message, and you paste in what your
+model wrote. Read each message, fix
 what is off, and approve. Nothing is sendable before that, and editing after approving
 sends it back to you for another look.
 
