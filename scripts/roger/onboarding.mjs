@@ -318,8 +318,17 @@ const DEMO = {
 };
 
 // ── Da entrevista para a configuração da trava de voz ─────────────────────────
+// Quanto cabe numa mensagem, por canal. Uma DM longa ainda é curta perto de um e-mail;
+// tratar as duas com o mesmo teto fazia a Roger liberar 900 caracteres no LinkedIn.
+export const CAPS = {
+  linkedin: { short: 300, medium: 450, long: 700, connection: 300 },
+  email: { short: 600, medium: 900, long: 1400, connection: 300 },
+  both: { short: 420, medium: 600, long: 900, connection: 300 },
+};
+
 export function toVoiceConfig(a) {
-  const maxChars = { short: 420, medium: 600, long: 900 }[a.length] ?? 600;
+  const porCanal = CAPS[a.channels] || CAPS.linkedin;
+  const maxChars = porCanal[a.length] ?? porCanal.medium;
   return {
     language: a.language,
     channels: a.channels || 'linkedin',
@@ -333,11 +342,11 @@ export function toVoiceConfig(a) {
     banConsultantJargon: a.register !== 'formal',
     banFormalGreeting: false,
     banVanityMetrics: false,
-    caps: { default: maxChars, connection: 300 },
+    caps: { default: maxChars, connection: porCanal.connection },
     maxQuestions: 1,
     ctaStyle: a.cta,
     greeting: splitSemi(a.greeting),
-    signoff: String(a.signoff || '').trim() || null,
+    signoff: ouNulo(a.signoff),
     bannedWords: splitList(a.banned),
     bannedPhrases: [],
     rules: voiceRulesFrom(a),
@@ -394,6 +403,15 @@ function splitList(s) {
 
 // Aberturas: uma pessoa abre de vários jeitos, e insistir numa só perde informação.
 // Uma virou string; várias viram lista.
+// Resposta negativa é negativa, não conteúdo. No primeiro teste real alguém respondeu
+// "no" à pergunta da assinatura e virou uma assinatura escrita "no".
+const NEGATIVAS = new Set(['no', 'n', 'nao', 'não', 'nope', 'nenhuma', 'nenhum', 'none', '-', 'x']);
+function ouNulo(s) {
+  const v = String(s || '').trim();
+  if (!v || NEGATIVAS.has(v.toLowerCase())) return null;
+  return v;
+}
+
 function splitSemi(s) {
   const partes = String(s || '').split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
   if (!partes.length) return null;
