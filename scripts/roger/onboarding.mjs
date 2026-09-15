@@ -746,9 +746,21 @@ async function main() {
   if (!salvar && !args.includes('--demo') && process.stdin.isTTY) {
     const rl2 = createInterface({ input: process.stdin, output: process.stdout });
     try {
-      const resp = (await rl2.question(`\n${B('Save these to disk?')} ${D('[Y/n] ')}`)).trim().toLowerCase();
-      salvar = resp === '' || resp === 'y' || resp === 'yes' || resp === 's' || resp === 'sim';
-      if (!salvar) out(D('Nothing written. Run again with --write when you are ready.'));
+      // Pergunta até entender. Resposta não reconhecida NUNCA pode significar "descarta":
+      // no primeiro teste real, quem respondeu outra coisa perdeu 25 minutos de entrevista.
+      const SIM = ['yes', 'y', 'sim', 's', ''];
+      const NAO = ['no', 'n', 'nao', 'não'];
+      for (;;) {
+        const resp = (await rl2.question(`\n${B('Save all of this?')} ${D('type yes or no (Enter = yes): ')}`)).trim().toLowerCase();
+        if (SIM.includes(resp)) { salvar = true; break; }
+        if (NAO.includes(resp)) { salvar = false; break; }
+        out(D(`  I did not understand "${resp}". Type yes or no.`));
+      }
+      if (!salvar) {
+        out('');
+        out(`${B('Nothing was written, and these answers are gone.')}`);
+        out(D('To keep them next time, run: npm run onboarding -- --write'));
+      }
     } finally {
       rl2.close();
     }
