@@ -30,6 +30,23 @@ Honest answer only. "No, because…" is the most useful sentence in this file.
 
 ---
 
+## If you record your screen
+
+A recording is worth more than notes, because it catches the moments you would never
+report — where you paused, re-read a question, or went looking for something that was
+not there. If you can, record the whole first run.
+
+**Two things to keep out of the video:**
+
+- **Your API keys.** Put them in `.env` **before** you start recording, or pause while you
+  paste. A key on video is a key that leaked.
+- **Real people.** The leads in your spreadsheet are third parties who did not agree to
+  be in a recording. Use two or three leads you are comfortable showing, or blur that
+  part. Their names are not what we need to see — your face when the tool confuses you is.
+
+Nothing else is sensitive: the interview answers, the briefing and the messages are all
+yours, and seeing them is the whole point.
+
 ## How to send it
 
 Open an issue, or send it to Antonio directly — whichever is less friction. Rough notes
