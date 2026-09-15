@@ -36,6 +36,7 @@ const FALLBACK = {
     headcount_min: 1,
     headcount_max: 100000,
     budget_floor_usd_month: 0,
+    stage_gate: 0,
     gap_material_min: 2,
     timing_forte_min: 1,
   },
@@ -179,9 +180,12 @@ export function icpGate(lead, icp = loadIcp()) {
     return { pass: false, reason: `headcount ${l.headcount} fora de ${n.headcount_min}-${n.headcount_max}` };
   }
 
-  // estágio: Web3 post-MVP OU Web2 firm qualificada
-  if (l.web3PostMVP !== true && l.web2Firm !== true) {
-    return { pass: false, reason: 'sem estágio válido (nem Web3 post-MVP nem Web2 firm qualificada)' };
+  // Portão de estágio: OPCIONAL, e desligado por padrão. Ele é herança do primeiro
+  // contexto que esta engine atendeu, onde "produto ao vivo" era hard-gate. Para a
+  // maioria dos negócios isso não existe, e ligado por padrão ele descartava todo lead
+  // vindo de planilha. Ligue com `stage_gate | 1` na tabela 3.2.M do seu icp.md.
+  if (n.stage_gate && l.web3PostMVP !== true && l.web2Firm !== true) {
+    return { pass: false, reason: 'sem estágio válido (o seu icp.md exige produto ao vivo ou fundo qualificado)' };
   }
 
   // geografia (3.4)
