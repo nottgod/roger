@@ -116,11 +116,27 @@ test('a voz da entrevista reprova o que ela disse que não usa', () => {
   assert.deepEqual(semTravessao.errors, []);
 });
 
-test('quem escolhe mensagem curta ganha um cap curto', () => {
-  const voice = resolveVoice(toVoiceConfig(ANSWERS));
-  assert.equal(voice.caps.default, 420);
-  const longa = lintMessage('x'.repeat(500), { stage: 'FUP_1', voice });
-  assert.ok(longa.errors.some((e) => /máx 420/.test(e)));
+test('o teto de tamanho depende do CANAL, não só do "curta/média/longa"', () => {
+  // A mesma resposta "curta" significa coisas diferentes: uma DM curta é bem menor
+  // que um e-mail curto. Antes os dois davam 420 e a Roger liberava DM gigante.
+  const noLinkedin = resolveVoice(toVoiceConfig({ ...ANSWERS, channels: 'linkedin' }));
+  const noEmail = resolveVoice(toVoiceConfig({ ...ANSWERS, channels: 'email' }));
+  assert.equal(noLinkedin.caps.default, 300);
+  assert.equal(noEmail.caps.default, 600);
+
+  const mesmaMensagem = 'x'.repeat(500);
+  const naDm = lintMessage(mesmaMensagem, { stage: 'FUP_1', voice: noLinkedin });
+  const noMail = lintMessage(mesmaMensagem, { stage: 'FUP_1', voice: noEmail });
+  assert.ok(naDm.errors.some((e) => /máx 300/.test(e)), 'na DM, 500 chars estoura');
+  assert.deepEqual(noMail.errors, [], 'no e-mail, os mesmos 500 chars passam');
+});
+
+test('resposta negativa na assinatura não vira assinatura', () => {
+  for (const resposta of ['no', 'não', 'nope', 'none', '-', '']) {
+    const cfg = toVoiceConfig({ ...ANSWERS, signoff: resposta });
+    assert.equal(cfg.signoff, null, `"${resposta}" deveria virar null`);
+  }
+  assert.equal(toVoiceConfig({ ...ANSWERS, signoff: 'Best, Sam' }).signoff, 'Best, Sam');
 });
 
 test('gramática impecável liga a regra que a gramática humana desliga', () => {
