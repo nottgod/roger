@@ -26,7 +26,7 @@ If it is missing or older: [nodejs.org](https://nodejs.org) (the LTS button), or
 ## 2. Get the code
 
 ```bash
-git clone https://github.com/nottgod/rogeralpha.git roger && cd roger
+git clone https://github.com/nottgod/roger.git && cd roger
 ```
 
 No git on your machine, or that command is a hassle? On the repo page, the green **Code**

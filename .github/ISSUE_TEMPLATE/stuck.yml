@@ -1,0 +1,23 @@
+name: I got stuck / something was missing
+description: Nothing crashed, but you had to stop and think "what now?" — or you reached for something that is not there.
+labels: ["friction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every pause is a defect, even with no error on screen. Eighteen of the first
+        defects in this project were exactly this and none would have shown up in a test.
+  - type: textarea
+    id: moment
+    attributes:
+      label: The moment you stopped
+      description: What was on screen, and what you did not know.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you went looking for
+      description: The thing you assumed existed. If it should exist, say so — that is the roadmap.
+    validations:
+      required: true

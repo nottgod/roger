@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How I use it / general question
+    url: https://github.com/nottgod/roger/discussions
+    about: Not a defect — how something works, or how you would like it to work.
+  - name: Security issue
+    url: https://github.com/nottgod/roger/security/advisories/new
+    about: Never in a public issue. Private advisory, please.

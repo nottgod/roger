@@ -1,7 +1,9 @@
 # Feedback
 
-You are one of three people using this before anyone else. The code is young: 226 tests
-cover the parts that could do damage, and everything else is a guess that needs your eyes.
+The code is young. 226 tests cover the parts that could do damage, and everything else
+is a guess that needs your eyes. Three people used this before it was public and found
+eighteen defects in the first hour — none of them in the engine, all of them in the part
+where a human meets the thing. That is the part you can see and I cannot.
 
 What is worth your time to report, in order:
 
@@ -49,8 +51,10 @@ yours, and seeing them is the whole point.
 
 ## How to send it
 
-Open an issue, or send it to Antonio directly — whichever is less friction. Rough notes
-are fine. A voice message is fine.
+[Open an issue](https://github.com/nottgod/roger/issues/new/choose) — there is a form for
+a bug and a form for "it did not sound like me", which is the one I care most about. If an
+issue is more friction than it is worth, send it to Antonio directly. Rough notes are fine.
+A voice message is fine.
 
 **Please do not include:** your API keys, your `.env`, or the real name and message of a
 lead who did not agree to appear in a bug report. Mask them (`Ana at <company>`), or
@@ -60,8 +64,9 @@ describe the shape of the problem instead of the content.
 
 Not worth reporting, they are on the list:
 
-- `rapport/contexts/` ships with one real context that is not yours. Yours comes from the
-  interview; the shipped one is a reference.
+- `rapport/contexts/example/` and `rapport/operators/example/` ship with a made-up company
+  and a made-up person. They are there so you can read the shape of the files before the
+  interview writes yours. Delete them whenever you like.
 - There is no CRM adapter other than Kommo yet. The spreadsheet path is the intended one
   for now.
 - The code comments and the test names are in Portuguese, while everything written for
@@ -69,5 +74,7 @@ Not worth reporting, they are on the list:
   it does not affect anything you run.
 - Sending needs Playwright installed separately and a manual LinkedIn login. That is
   deliberate, not an oversight.
+- The sending arm has never run against the real LinkedIn — only against a fake browser in
+  the tests. If you get there first, that is not a known issue, that is news: open one.
 
 Roger that.

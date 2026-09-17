@@ -8,17 +8,21 @@ it is your voice, your context and your judgment. Those live in plain files that
 to you. This repo is the structure around them.
 
 ```bash
-git clone https://github.com/nottgod/rogeralpha.git roger && cd roger
+git clone https://github.com/nottgod/roger.git && cd roger
 npm run onboarding
 ```
 
 That interview is the whole idea: ~25 minutes of questions about how you actually write,
 and it produces the two files that drive everything — your voice and your market.
 
-**Status: early alpha, in testing.** It runs and it has 226 tests, and it also has rough
-edges that a handful of people are finding right now. If you wandered in here on your own:
-this is not finished, and the polished version will live somewhere else. If you were sent
-here on purpose, see [FEEDBACK.md](FEEDBACK.md) — the rough edges are what I want.
+**Status: public beta.** 226 tests, zero dependencies, and a handful of people who
+already found the first eighteen rough edges. One thing you should know before you count
+on it: the sending arm has never typed a message into the real LinkedIn. Everything around
+it is tested against a fake browser. If you go there, you go first — and I want to hear
+what happened. The rest is yours to break: see [FEEDBACK.md](FEEDBACK.md) and
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+I hope you fork me.
 
 ---
 
@@ -90,7 +94,6 @@ rapport/
   operators/<you>/      your voice          ← the interview writes this
   contexts/<you>/       your market         ← the interview writes this
   cadencia-funil.md     your cadence, editable
-docs/                   design and architecture notes
 ```
 
 Change those markdown files and the behaviour changes. No code involved — that is the
