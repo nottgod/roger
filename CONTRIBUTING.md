@@ -52,4 +52,21 @@ catches shapes it recognises, not judgment you skipped.
    in one pass, by its author and a model. Somewhere in here is a sentence that is correct
    and still reads wrong to a native speaker. Those are worth a pull request.
 
+## One thing that is still in Portuguese, and why
+
+Everything written for a reader is in English. The **names** are not, in three places:
+
+- a few files: `cadencia.mjs`, `lint-voz.mjs`, `painel-server.mjs`, `cadencia-funil.md`;
+- some identifiers: `dorCentral`, `abordagem`, `redacao`, `narrativa`, `sondar`, `campanha`;
+- the stage constants: `MENSAGEM_INICIAL`, `FUP_MAIS`, `M2_DIRETO` — and these three do
+  show up on screen, in the briefing and in the `--stage` flag.
+
+This is deliberate for now, not an oversight. Renaming them touches the cadence markdown,
+the batch JSON, the documented flags and any file the first users already wrote — and a
+rename that breaks someone's install costs more than a Portuguese word costs to read.
+
+If you are refactoring near one of them anyway, renaming it in the same pull request is
+welcome. Just keep the old name working (the cadence parser does exactly this: it
+understands both headings), and say so in the description.
+
 Roger that.
