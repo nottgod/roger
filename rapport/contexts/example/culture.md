@@ -6,12 +6,12 @@ geographies to, so keep them as they are and change the other two columns.
 
 ## 8.1. Register by region
 
-| Região | Registro | Abertura exemplo |
+| Region | Register | Example opening |
 | --- | --- | --- |
 | USA NY | direct, bottom line first, no warm-up | saw you shipped X last week |
 | UK | dry, understated, no superlatives | noticed X, curious how you handle Y |
-| Germânico (DE/CH) | precise and factual, no empty praise, no hype | your docs say X, how does that work with Y |
-| Latin | warmer, a line of relationship before the point | tudo bem? vi que vocês lançaram X |
+| Germanic (DE/CH) | precise and factual, no empty praise, no hype | your docs say X, how does that work with Y |
+| LATAM (expansion) | warmer, a line of relationship before the point | saw you launched X, how is it going |
 | East Asia (JP/KR) | formal, patient, indirect ask | apologies for the direct message, a question about X |
 
 ## Transversal

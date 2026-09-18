@@ -46,7 +46,7 @@ test('(b) fora do ICP → DESCARTE via score.mjs gate', async () => {
   const deps = mockDeps({ fundable: { name: 'BigBank', numEmployees: 200 } });
   const r = await runIntel(lead, KEYS, deps);
   assert.equal(r.tier, 'DESCARTE');
-  assert.match(r.reason, /não-ICP/);
+  assert.match(r.reason, /not our market/);
 });
 
 test('(c) coleta falha (APIs retornam null) → report degrada sem crashar', async () => {

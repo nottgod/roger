@@ -46,6 +46,16 @@ const NUMBER_FIELDS = ['headcount', 'budgetProvavel'];
 
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 
+// "recent funding" · "recent_funding" · "Recent Funding" → recentFunding, que é como o
+// icp.md nomeia o sinal e como o score.mjs o procura no lead.
+export function flagName(header) {
+  const parts = String(header).trim().split(/[\s_-]+/).filter(Boolean);
+  if (!parts.length) return '';
+  const [first, ...rest] = parts;
+  const head = /^[A-Z][a-z]/.test(first) ? first[0].toLowerCase() + first.slice(1) : first;
+  return head + rest.map((w) => w[0].toUpperCase() + w.slice(1)).join('');
+}
+
 // Mapa alias → campo canônico, montado uma vez.
 const ALIAS_TO_FIELD = new Map();
 for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
@@ -117,7 +127,14 @@ export function normalizeLead(raw, index = 0) {
     const field = fieldForHeader(header);
     if (!field) {
       const key = String(header).trim();
-      if (key) extra[key] = value;
+      if (!key) continue;
+      // Os sinais de gap (3.11.M) e de timing (3.7.M) têm nome definido no SEU icp.md,
+      // então esta lista não pode conhecê-los de antemão. Regra: coluna desconhecida
+      // com valor de sim/não vira uma flag booleana com o nome dela. É assim que uma
+      // planilha consegue dizer "recentFunding: yes" sem ninguém editar código.
+      const flag = norm(value) ? coerceBoolean(value) : undefined;
+      if (flag !== undefined) { lead[flagName(key)] = flag; continue; }
+      extra[key] = value;
       continue;
     }
     if (BOOLEAN_FIELDS.includes(field)) {
@@ -205,7 +222,7 @@ export function readLeadsFile(path, opts = {}) {
 }
 
 // Modelo de planilha para a pessoa começar, com as colunas que rendem mais.
-export const TEMPLATE_CSV = `name,company,role,linkedin,website,country,segment,headcount,budget,notes
-Ana Ribeiro,NorthPay,Head of Marketing,https://linkedin.com/in/example,https://northpay.example,Singapore,payments,14,6k,met at the payments meetup
-Sam Okafor,Truleaf,Founder,https://linkedin.com/in/example2,https://truleaf.example,United States,rwa,9,4k,shipped an audit last week
+export const TEMPLATE_CSV = `name,company,role,linkedin,website,country,segment,headcount,budget,recentFunding,hiringForTheProblem,notes
+Ana Ribeiro,NorthPay,Head of Finance,https://linkedin.com/in/example,https://northpay.example,Singapore,payments,90,6k,no,yes,met at the payments meetup; closing books takes her team four days
+Sam Okafor,Truleaf,Head of Operations,https://linkedin.com/in/example2,https://truleaf.example,United States,marketplaces,140,4k,yes,yes,raised a seed round last month and is hiring a controller
 `;

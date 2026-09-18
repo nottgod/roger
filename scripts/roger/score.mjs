@@ -170,14 +170,14 @@ export function icpGate(lead, icp = loadIcp()) {
   // não-ICP explícito (3.6) = descarte imediato
   const flags = (l.nonIcpFlags || []).map(norm);
   const hitNonIcp = flags.find((f) => icp.nonIcp.has(f));
-  if (hitNonIcp) return { pass: false, reason: `não-ICP (3.6): ${hitNonIcp}` };
+  if (hitNonIcp) return { pass: false, reason: `not our market (3.6): ${hitNonIcp}` };
 
   // B2B² (exclui consumo de massa)
-  if (l.b2b2 === false) return { pass: false, reason: 'não é B2B² (vende pra consumo de massa)' };
+  if (l.b2b2 === false) return { pass: false, reason: 'not B2B² (sells to mass consumers)' };
 
   // headcount dentro da faixa
   if (typeof l.headcount === 'number' && (l.headcount < n.headcount_min || l.headcount > n.headcount_max)) {
-    return { pass: false, reason: `headcount ${l.headcount} fora de ${n.headcount_min}-${n.headcount_max}` };
+    return { pass: false, reason: `headcount ${l.headcount} is outside ${n.headcount_min}-${n.headcount_max}` };
   }
 
   // Portão de estágio: OPCIONAL, e desligado por padrão. Ele é herança do primeiro
@@ -185,22 +185,22 @@ export function icpGate(lead, icp = loadIcp()) {
   // maioria dos negócios isso não existe, e ligado por padrão ele descartava todo lead
   // vindo de planilha. Ligue com `stage_gate | 1` na tabela 3.2.M do seu icp.md.
   if (n.stage_gate && l.web3PostMVP !== true && l.web2Firm !== true) {
-    return { pass: false, reason: 'sem estágio válido (o seu icp.md exige produto ao vivo ou fundo qualificado)' };
+    return { pass: false, reason: 'no valid stage (your icp.md requires a live product or a qualified round)' };
   }
 
   // geografia (3.4)
   const geo = norm(l.geo);
   if (geo && icp.geoDiscard.has(geo)) return { pass: false, reason: `geografia de descarte: ${l.geo}` };
   if (geo && icp.geoAccept.size && !icp.geoAccept.has(geo) && !l.expansaoParaMercadoAlvo) {
-    return { pass: false, reason: `geografia não aceita: ${l.geo}` };
+    return { pass: false, reason: `geography not accepted: ${l.geo}` };
   }
 
   // decisor acessível
-  if (l.decisorAcessivel === false) return { pass: false, reason: 'sem decisor acessível' };
+  if (l.decisorAcessivel === false) return { pass: false, reason: 'no reachable decision maker' };
 
   // budget provável acima do piso
   if (typeof l.budgetProvavel === 'number' && l.budgetProvavel < n.budget_floor_usd_month) {
-    return { pass: false, reason: `budget provável $${l.budgetProvavel} abaixo do piso $${n.budget_floor_usd_month}` };
+    return { pass: false, reason: `likely budget $${l.budgetProvavel} is below the floor of $${n.budget_floor_usd_month}` };
   }
 
   return { pass: true, reason: 'passou nos hard-gates B2B²' };

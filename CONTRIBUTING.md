@@ -16,7 +16,7 @@ Rogers that disagree than one that hedges.
 ## Before you open a pull request
 
 ```bash
-npm test     # 226 tests, and none of them touch the network
+npm test     # 238 tests, and none of them touch the network
 ```
 
 If the tests need the network to pass, something is wrong with the test, not with your

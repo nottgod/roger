@@ -11,15 +11,15 @@ import {
 // ── helpers: cultureLookup ──
 test('cultureLookup: Germany -> registro factual + transversal germânico', () => {
   const c = cultureLookup('Germany');
-  assert.equal(c.region, 'Germânico (DE/CH)');
+  assert.equal(c.region, 'Germanic (DE/CH)');
   assert.match(c.registro, /factual/i);
-  assert.ok(c.transversal.some((t) => /elogio vazio/i.test(t)));
+  assert.ok(c.transversal.some((t) => /empty praise|compliment/i.test(t)));
 });
 
 test('cultureLookup: Japan -> East Asia + transversal paciência', () => {
   const c = cultureLookup('Japan');
   assert.equal(c.region, 'East Asia (JP/KR)');
-  assert.ok(c.transversal.some((t) => /paciência/i.test(t)));
+  assert.ok(c.transversal.some((t) => /patient|patience/i.test(t)));
 });
 
 test('cultureLookup: geo desconhecido não crasha, marca não mapeado', () => {
@@ -89,15 +89,15 @@ function intelReport(over = {}) {
 
 // ── outbound: gating ──
 test('outbound: tier DESCARTE -> go=false, skipReason DESCARTE', () => {
-  const b = buildGenerationBrief({ contact: { name: 'X', geo: 'USA' }, company: 'NopeCo', stage: 'MENSAGEM_INICIAL', mode: 'outbound', intel: intelReport({ tier: 'DESCARTE', reason: 'não-ICP (3.6): neobank' }) });
+  const b = buildGenerationBrief({ contact: { name: 'X', geo: 'USA' }, company: 'NopeCo', stage: 'MENSAGEM_INICIAL', mode: 'outbound', intel: intelReport({ tier: 'DESCARTE', reason: 'not our market (3.6): neobank' }) });
   assert.equal(b.go, false);
-  assert.match(b.skipReason, /DESCARTE/);
+  assert.match(b.skipReason, /SKIP/);
 });
 
 test('outbound: FRIO + gap 0 + fontes pobres -> go=false, sem matéria', () => {
   const b = buildGenerationBrief({ contact: { name: 'X', geo: 'UK' }, company: 'GhostCo', stage: 'MENSAGEM_INICIAL', mode: 'outbound', intel: intelReport({ tier: 'FRIO', gapDetected: [], gapCount: 0, timingDetected: [], timingCount: 0, sources: { fundable: 'fail', firecrawl: 'skip', exa: 'fail' }, raw: { website: null, fundable: null, scraped: {}, painPoint: null } }) });
   assert.equal(b.go, false);
-  assert.match(b.skipReason, /sem matéria/i);
+  assert.match(b.skipReason, /not enough material/i);
 });
 
 test('outbound: QUENTE payments USA FUP_2 -> go=true, ângulo de troca, vocab do segmento, cultura USA', () => {
@@ -112,7 +112,7 @@ test('outbound: QUENTE payments USA FUP_2 -> go=true, ângulo de troca, vocab do
 
 test('outbound: connection germany institucional -> transversal germânico, cap 300', () => {
   const b = buildGenerationBrief({ contact: { name: 'Klaus', role: 'Head of Finance', geo: 'Germany' }, company: 'KapitalFO', stage: 'connection', mode: 'outbound', intel: intelReport({ segment: 'payments', approach: 'Institucional' }) });
-  assert.ok(b.culture.transversal.some((t) => /elogio vazio/i.test(t)));
+  assert.ok(b.culture.transversal.some((t) => /empty praise|compliment/i.test(t)));
   assert.equal(b.redacao.charTarget.cap, 300);
   assert.match(b.redacao.quando, /finance leader|regulated/i);
 });
@@ -120,7 +120,7 @@ test('outbound: connection germany institucional -> transversal germânico, cap 
 test('outbound: rawFacts nunca inventa funding (raw.fundable null -> funding null)', () => {
   const b = buildGenerationBrief({ contact: { name: 'X', geo: 'USA' }, company: 'AcmeRWA', stage: 'FUP_1', mode: 'outbound', intel: intelReport({ raw: { website: null, fundable: null, scraped: {}, painPoint: null } }) });
   assert.equal(b.rawFacts.funding, null);
-  assert.match(b.rawFacts.aviso, /NUNCA inventar/i);
+  assert.match(b.rawFacts.aviso, /NEVER invent/i);
 });
 
 // ── conversation ──
@@ -219,22 +219,22 @@ test('conversation regressão: "not interested"/"no longer interested"/"unintere
 test('renderBrief: outbound vira markdown com as 3 camadas', () => {
   const b = buildGenerationBrief({ contact: { name: 'Jane', geo: 'USA' }, company: 'NorthPay', stage: 'FUP_2', mode: 'outbound', intel: intelReport({}) });
   const md = renderBrief(b);
-  assert.match(md, /Diagnóstico/);
-  assert.match(md, /Cultura/);
-  assert.match(md, /Redação/);
+  assert.match(md, /Diagnosis/);
+  assert.match(md, /Culture/);
+  assert.match(md, /Wording/);
   assert.equal(typeof md, 'string');
 });
 
 test('renderBrief: brief com go=false mostra SKIP e a razão', () => {
-  const b = buildGenerationBrief({ contact: { geo: 'USA' }, company: 'NopeCo', stage: 'MENSAGEM_INICIAL', mode: 'outbound', intel: intelReport({ tier: 'DESCARTE', reason: 'não-ICP' }) });
+  const b = buildGenerationBrief({ contact: { geo: 'USA' }, company: 'NopeCo', stage: 'MENSAGEM_INICIAL', mode: 'outbound', intel: intelReport({ tier: 'DESCARTE', reason: 'not our market' }) });
   const md = renderBrief(b);
-  assert.match(md, /SKIP|NÃO GERAR/i);
+  assert.match(md, /SKIP|DO NOT WRITE/i);
 });
 
 test('renderBrief: conversation mostra sinal, objeção e regra de voz', () => {
   const b = buildGenerationBrief(convInput('we already have a tool for that'));
   const md = renderBrief(b);
-  assert.match(md, /sinal/i);
+  assert.match(md, /signal/i);
   assert.match(md, /reframe/i);
   assert.match(md, /conceder-reframe/);
 });

@@ -158,5 +158,19 @@ test('o modelo de planilha que a gente entrega é lido sem erro nenhum', () => {
   assert.equal(r.leads.length, 2);
   assert.equal(r.leads[0].company, 'NorthPay');
   assert.equal(r.leads[0].budgetProvavel, 6000);
-  assert.equal(r.leads[1].headcount, 9);
+  assert.equal(r.leads[1].headcount, 140);
+  // o template agora carrega sinais de timing, que é o que tira o lead de FRIO
+  assert.equal(r.leads[1].recentFunding, true);
+  assert.equal(r.leads[0].recentFunding, false);
+});
+
+test('coluna de sinal que o icp.md define vira flag booleana no lead', () => {
+  // noRecentActivity e hiringForTheProblem não estão em FIELD_ALIASES de propósito:
+  // os nomes vêm do icp.md de cada pessoa, então o parser aceita qualquer coluna
+  // booleana pelo nome dela.
+  const r = readLeads({ text: 'name,company,hiringForTheProblem,no recent activity,Fonte\nAna,NorthPay,yes,sim,evento' });
+  const lead = r.leads[0];
+  assert.equal(lead.hiringForTheProblem, true);
+  assert.equal(lead.noRecentActivity, true);
+  assert.deepEqual(lead.extra, { Fonte: 'evento' }, 'texto que não é booleano continua indo para extra');
 });

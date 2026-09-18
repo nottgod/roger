@@ -15,7 +15,7 @@ npm run onboarding
 That interview is the whole idea: ~25 minutes of questions about how you actually write,
 and it produces the two files that drive everything — your voice and your market.
 
-**Status: public beta.** 226 tests, zero dependencies, and a handful of people who
+**Status: public beta.** 238 tests, zero dependencies, and a handful of people who
 already found the first eighteen rough edges. One thing you should know before you count
 on it: the sending arm has never typed a message into the real LinkedIn. Everything around
 it is tested against a fake browser. If you go there, you go first — and I want to hear
@@ -66,7 +66,7 @@ your voice guard checks it → you approve it → it gets sent.
 
 ```bash
 npm run doctor      # tells you exactly what is missing
-npm test            # 226 tests, no network
+npm test            # 238 tests, no network
 npm run onboarding  # the interview
 npm run draft       # the briefing, ready to paste into your model
 npm run panel       # read, edit, approve

@@ -1,6 +1,6 @@
 # Feedback
 
-The code is young. 226 tests cover the parts that could do damage, and everything else
+The code is young. 238 tests cover the parts that could do damage, and everything else
 is a guess that needs your eyes. Three people used this before it was public and found
 eighteen defects in the first hour — none of them in the engine, all of them in the part
 where a human meets the thing. That is the part you can see and I cannot.

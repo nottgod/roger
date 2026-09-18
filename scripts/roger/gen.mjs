@@ -65,31 +65,31 @@ export function parseTable(text, headerRe) {
 const GEO_TO_REGION = {
   usa: 'USA NY', us: 'USA NY', 'united states': 'USA NY',
   uk: 'UK', 'united kingdom': 'UK',
-  germany: 'Germânico (DE/CH)', alemanha: 'Germânico (DE/CH)',
-  switzerland: 'Germânico (DE/CH)', 'suíça': 'Germânico (DE/CH)', suica: 'Germânico (DE/CH)',
-  austria: 'Germânico (DE/CH)', 'áustria': 'Germânico (DE/CH)',
-  france: 'França', 'frança': 'França',
+  germany: 'Germanic (DE/CH)', alemanha: 'Germanic (DE/CH)',
+  switzerland: 'Germanic (DE/CH)', 'suíça': 'Germanic (DE/CH)', suica: 'Germanic (DE/CH)',
+  austria: 'Germanic (DE/CH)', 'áustria': 'Germanic (DE/CH)',
+  france: 'France', 'frança': 'France',
   uae: 'UAE', dubai: 'UAE',
-  singapore: 'Singapura / HK', singapura: 'Singapura / HK', 'hong kong': 'Singapura / HK', hk: 'Singapura / HK',
+  singapore: 'Singapore / HK', singapura: 'Singapore / HK', 'hong kong': 'Singapore / HK', hk: 'Singapore / HK',
   japan: 'East Asia (JP/KR)', 'japão': 'East Asia (JP/KR)', japao: 'East Asia (JP/KR)',
   'south korea': 'East Asia (JP/KR)', 'coreia do sul': 'East Asia (JP/KR)', korea: 'East Asia (JP/KR)',
   brazil: 'LATAM (expansion)', brasil: 'LATAM (expansion)', mexico: 'LATAM (expansion)',
   'méxico': 'LATAM (expansion)', argentina: 'LATAM (expansion)', colombia: 'LATAM (expansion)',
 };
 const FALLBACK_CULTURE = {
-  'USA NY': { registro: 'direto, bottom-line primeiro', abertura: "Quick one, saw X. Curious how you're handling Y." },
-  'USA SF / Miami': { registro: 'relacional, mais caloroso', abertura: "Hey, been following what you're building with X." },
-  'UK': { registro: 'formal, humor seco', abertura: 'Came across X, well played. Wondering about Y.' },
-  'Germânico (DE/CH)': { registro: 'factual, evidência, sem synergy-flattery', abertura: 'X stands out for [fact]. How are you approaching Y?' },
-  'França': { registro: 'conceitual, mais elaborado', abertura: 'Bonjour, votre approche sur X est intéressante.' },
-  'UAE': { registro: 'relacional com formalidade', abertura: 'Hello [Name], impressive work on X.' },
-  'Singapura / HK': { registro: 'eficiente, educado', abertura: 'Hi [Name], noticed X. Quick question on Y.' },
-  'East Asia (JP/KR)': { registro: 'indireto, hierárquico, paciência', abertura: '[Name]-san, I admire the work on X.' },
-  'LATAM (expansion)': { registro: 'relacional, warmth', abertura: 'Hey, vi o que vocês tão fazendo com X.' },
+  'USA NY': { registro: 'direct, bottom line first', abertura: "Quick one, saw X. Curious how you're handling Y." },
+  'USA SF / Miami': { registro: 'relational, warmer', abertura: "Hey, been following what you're building with X." },
+  'UK': { registro: 'formal, dry humour', abertura: 'Came across X, well played. Wondering about Y.' },
+  'Germanic (DE/CH)': { registro: 'factual, evidence, no synergy flattery', abertura: 'X stands out for [fact]. How are you approaching Y?' },
+  'France': { registro: 'conceptual, more elaborate', abertura: 'Bonjour, votre approche sur X est intéressante.' },
+  'UAE': { registro: 'relational, with formality', abertura: 'Hello [Name], impressive work on X.' },
+  'Singapore / HK': { registro: 'efficient, polite', abertura: 'Hi [Name], noticed X. Quick question on Y.' },
+  'East Asia (JP/KR)': { registro: 'indirect, hierarchical, patient', abertura: '[Name]-san, I admire the work on X.' },
+  'LATAM (expansion)': { registro: 'relational, warm', abertura: 'Hey, been following what you are building with X.' },
 };
 const TRANSVERSAL = {
-  germanic: 'Germânico: nunca abrir com elogio vazio (amazing/love what you\'re doing); abrir com fato observado.',
-  eastAsia: 'East Asia formal: paciência, sem CTA agressivo no primeiro toque.',
+  germanic: 'Germanic: never open with empty praise (amazing / love what you are doing); open with an observed fact.',
+  eastAsia: 'East Asia, formal: patience, no aggressive CTA on the first touch.',
 };
 
 const SEG_ALIAS = {
@@ -197,7 +197,7 @@ export function cultureLookup(geo) {
   }
   const base = parsed || (region ? FALLBACK_CULTURE[region] : null);
   const transversal = [];
-  if (region === 'Germânico (DE/CH)') transversal.push(TRANSVERSAL.germanic);
+  if (region === 'Germanic (DE/CH)') transversal.push(TRANSVERSAL.germanic);
   if (region === 'East Asia (JP/KR)') transversal.push(TRANSVERSAL.eastAsia);
   return {
     geo: geo || null,
@@ -303,19 +303,19 @@ function groundFacts(intel = {}) {
     website: raw.website || null,
     funding: f ? { dealDate: f.dealDate || null, numEmployees: f.numEmployees ?? null, country: f.country || null } : null,
     painPoint: raw.painPoint || null,
-    aviso: 'Use só fatos presentes aqui. Campo null = desconhecido. NUNCA inventar funding/número.',
+    aviso: 'Use only the facts present here. A null field means unknown. NEVER invent funding or a number.',
   };
 }
 
 function outboundGate(intel = {}) {
   if (!intel || intel.tier === 'DESCARTE') {
-    return { go: false, skipReason: `DESCARTE: ${intel?.reason || 'fora do ICP'} — não gerar` };
+    return { go: false, skipReason: `SKIP: ${intel?.reason || 'outside the ICP'} — do not write` };
   }
   const gapCount = intel.gap?.count ?? 0;
   const src = intel.sources || {};
   const srcOk = src.fundable === 'ok' || src.exa === 'ok' || src.firecrawl === 'ok';
   if (intel.tier === 'FRIO' && gapCount === 0 && !srcOk) {
-    return { go: false, skipReason: 'sem matéria pra msg forte (FRIO + gap raso + fontes pobres) — não gerar placeholder' };
+    return { go: false, skipReason: 'not enough material for a strong message (cold + shallow gap + thin sources) — do not write a placeholder' };
   }
   return { go: true, skipReason: null };
 }
@@ -346,7 +346,7 @@ function buildOutboundBrief(input) {
       templatesFile: `rapport/contexts/${CONTEXT}/${MSGS_FILE}`,
       rule: campanha
         ? 'campanha pré-pronta: usar o template (variar levemente, anti-blast). Cadência já semeada nos cards — NUNCA criar FUP nova'
-        : (taskText ? 'seguir a instrução do texto da task (instrução do card manda)' : 'sem instrução no card: usar o ângulo do toque (padrão direto M1/M2, fechar chamando pra call)'),
+        : (taskText ? 'follow the task text (the card instruction wins)' : 'no card instruction: use the angle for this touch (direct by default on M1/M2, close by asking for a call)'),
     },
     company: company || intel.lead?.company || null,
     contact: { name: contact.name || null, role: contact.role || null, geo: contact.geo || null, linkedin: contact.linkedin || null },
@@ -487,7 +487,7 @@ function buildConversationBrief(input) {
   return {
     mode: 'conversation',
     go: signal !== 'discard',
-    skipReason: signal === 'discard' ? 'sinal de descarte: encerrar honesto, não forçar próxima msg' : null,
+    skipReason: signal === 'discard' ? 'discard signal: close it honestly instead of forcing another message' : null,
     company: company || intel.lead?.company || null,
     contact: { name: contact.name || null, role: contact.role || null, geo: contact.geo || null },
     lastLeadMsg: last || null,
@@ -511,40 +511,40 @@ export function buildGenerationBrief(input = {}) {
 }
 
 // ── render: GenerationBrief -> markdown legível pro LLM redigir ──
-function list(arr) { return (arr && arr.length) ? arr.map((x) => `- ${x}`).join('\n') : '- (nenhum)'; }
+function list(arr) { return (arr && arr.length) ? arr.map((x) => `- ${x}`).join('\n') : '- (none)'; }
 
 export function renderBrief(brief) {
-  if (!brief) return '(brief vazio)';
-  const head = `# GenerationBrief — modo ${brief.mode} — ${brief.company || '(sem empresa)'}`;
+  if (!brief) return '(empty brief)';
+  const head = `# GenerationBrief — ${brief.mode} mode — ${brief.company || '(no company)'}`;
   if (brief.go === false) {
-    return `${head}\n\n## NÃO GERAR (SKIP)\n${brief.skipReason || 'sem razão registrada'}\n`;
+    return `${head}\n\n## DO NOT WRITE (SKIP)\n${brief.skipReason || 'no reason recorded'}\n`;
   }
   if (brief.mode === 'conversation') {
     const o = brief.objection;
     return [
       head,
-      `**Última msg do lead:** ${brief.lastLeadMsg || '(não fornecida)'}`,
-      `**Sinal:** ${brief.signal}`,
-      `**Regra de voz:** ${brief.voiceRule?.rule} — ${brief.voiceRule?.why}`,
-      o ? `**Objeção detectada:** ${o.key}\n**Reframe:** ${o.reframe}` : '**Objeção detectada:** nenhuma',
-      `\n## Diagnóstico\nDor central: ${brief.diagnostic?.dorCentral}\nSegmento: ${brief.diagnostic?.segment || '?'} — vocabulário: ${brief.diagnostic?.vocab || '?'}`,
-      `\n## BANT leve (1 pergunta por vez)\n${list((brief.bant?.probe || []).map((b) => `${b.key}: ${b.sondar}`))}`,
-      `\n## Cultura\nRegião: ${brief.culture?.region} — registro: ${brief.culture?.registro}\n${list(brief.culture?.transversal)}`,
-      `\n## Voz (ler ${brief.voice?.personaFile})\n${list(brief.voice?.rules)}`,
-      `\n## Catálogo completo: ${brief.contextFile}`,
+      `**Their last message:** ${brief.lastLeadMsg || '(not provided)'}`,
+      `**Signal:** ${brief.signal}`,
+      `**Voice rule:** ${brief.voiceRule?.rule} — ${brief.voiceRule?.why}`,
+      o ? `**Objection detected:** ${o.key}\n**Reframe:** ${o.reframe}` : '**Objection detected:** none',
+      `\n## Diagnosis\nCore pain: ${brief.diagnostic?.dorCentral}\nSegment: ${brief.diagnostic?.segment || '?'} — vocabulary: ${brief.diagnostic?.vocab || '?'}`,
+      `\n## Light BANT (one question at a time)\n${list((brief.bant?.probe || []).map((b) => `${b.key}: ${b.sondar}`))}`,
+      `\n## Culture\nRegion: ${brief.culture?.region} — how people expect to be addressed: ${brief.culture?.registro}\n${list(brief.culture?.transversal)}`,
+      `\n## Voice (read ${brief.voice?.personaFile})\n${list(brief.voice?.rules)}`,
+      `\n## Full catalogue: ${brief.contextFile}`,
       `\n_${brief.note}_`,
     ].join('\n');
   }
   const d = brief.diagnostic || {}; const r = brief.redacao || {}; const c = brief.culture || {}; const rf = brief.rawFacts || {}; const cd = brief.card || {};
   return [
     head,
-    `Stage: ${brief.stage} · contato: ${brief.contact?.name || '?'} (${brief.contact?.role || '?'}, ${brief.contact?.geo || '?'})`,
-    `\n## 0. Instrução do card (manda sobre o resto)\nCampanha: ${cd.campanha || '(sem)'} · texto da task: ${cd.taskText || '(sem)'}\nRegra: ${cd.rule || '?'}${cd.template ? `\nTemplate ${cd.templateKey} (base, variar por lead): "${cd.template}"` : ''}\nTemplates editáveis em: ${cd.templatesFile || '?'}`,
-    `\n## 1. Diagnóstico\nDor central: ${d.dorCentral}\nÂngulo (caso parecido): ${d.angle || '?'}\nAbordagem sugerida: ${d.approach || '?'}\nSegmento: ${d.segment || '?'} — narrativa: ${d.narrativa || '?'}\nVocabulário pra soar crível: ${d.vocab || '?'}\nGap detectado: ${(d.gapDetected || []).join(', ') || '(nenhum objetivo)'}\nGap a julgar (NÃO inventar): ${(d.gapNeedsJudgment || []).join('; ') || '(nenhum)'}\nTiming: ${(d.timingDetected || []).join(', ') || '(nenhum)'}`,
-    `\n## 2. Cultura\nRegião: ${c.region} — registro: ${c.registro}\nAbertura exemplo: ${c.abertura || '?'}\n${list(c.transversal)}`,
-    `\n## 3. Redação\nÂngulo do toque: ${r.touchAngle?.angle} (+${r.touchAngle?.days ?? '?'}d do toque anterior)\nQuando usar a abordagem: ${r.quando || '?'}\nEstrutura (7.7):\n${list(r.estrutura?.elementos)}\nFormato:\n${list(r.estrutura?.formato)}\nChars: alvo ${r.charTarget?.min}-${r.charTarget?.max}, cap ${r.charTarget?.cap}\nBanidos a vigiar:\n${list(r.bannedToWatch)}`,
-    `\n## Voz (ler ${r.voice?.personaFile})\n${list(r.voice?.rules)}`,
-    `\n## Fatos reais (NUNCA inventar fora disto)\nwebsite: ${rf.website || 'null'} · funding: ${rf.funding ? JSON.stringify(rf.funding) : 'null'} · painPoint: ${rf.painPoint || 'null'}\n_${rf.aviso}_`,
+    `Stage: ${brief.stage} · contact: ${brief.contact?.name || '?'} (${brief.contact?.role || '?'}, ${brief.contact?.geo || '?'})`,
+    `\n## 0. Card instruction (overrides the rest)\nCampaign: ${cd.campanha || '(none)'} · task text: ${cd.taskText || '(none)'}\nRule: ${cd.rule || '?'}${cd.template ? `\nTemplate ${cd.templateKey} (a base — vary it per lead): "${cd.template}"` : ''}\nTemplates are editable in: ${cd.templatesFile || '?'}`,
+    `\n## 1. Diagnosis\nCore pain: ${d.dorCentral}\nAngle (a similar case): ${d.angle || '?'}\nSuggested approach: ${d.approach || '?'}\nSegment: ${d.segment || '?'} — narrative: ${d.narrativa || '?'}\nVocabulary that sounds like an insider: ${d.vocab || '?'}\nGap detected: ${(d.gapDetected || []).join(', ') || '(none measurable)'}\nGap to judge (do NOT invent): ${(d.gapNeedsJudgment || []).join('; ') || '(none)'}\nTiming: ${(d.timingDetected || []).join(', ') || '(none)'}`,
+    `\n## 2. Culture\nRegion: ${c.region} — how people expect to be addressed: ${c.registro}\nExample opening: ${c.abertura || '?'}\n${list(c.transversal)}`,
+    `\n## 3. Wording\nAngle for this touch: ${r.touchAngle?.angle} (+${r.touchAngle?.days ?? '?'}d after the previous one)\nWhen to use this approach: ${r.quando || '?'}\nStructure:\n${list(r.estrutura?.elementos)}\nFormat:\n${list(r.estrutura?.formato)}\nChars: target ${r.charTarget?.min}-${r.charTarget?.max}, cap ${r.charTarget?.cap}\nBanned words to watch:\n${list(r.bannedToWatch)}`,
+    `\n## Voice (read ${r.voice?.personaFile})\n${list(r.voice?.rules)}`,
+    `\n## Real facts (NEVER invent anything outside this)\nwebsite: ${rf.website || 'null'} · funding: ${rf.funding ? JSON.stringify(rf.funding) : 'null'} · painPoint: ${rf.painPoint || 'null'}\n_${rf.aviso}_`,
   ].join('\n');
 }
 

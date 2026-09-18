@@ -33,7 +33,7 @@ export function instruction(operator, stage) {
     'Rules, in order of importance:',
     '1. Sound like the operator. The voice section below is not a style suggestion, it is',
     '   the constraint. Read the samples in the persona file it points at.',
-    '2. Use ONLY the facts in "Fatos reais". A null field means unknown. Never invent a',
+    '2. Use ONLY the facts in "Real facts". A null field means unknown. Never invent a',
     '   number, a funding round, or a detail about the company.',
     '3. One open question. Not two.',
     '4. No greeting like "Hi/Hello/Dear" unless the voice says otherwise, no corporate',
@@ -66,14 +66,14 @@ export function resolveLead({ leadJson, file, n }, deps = {}) {
     try {
       return { lead: JSON.parse(leadJson), error: null };
     } catch (e) {
-      return { lead: null, error: `--lead não é JSON válido: ${e.message}` };
+      return { lead: null, error: `--lead is not valid JSON: ${e.message}` };
     }
   }
-  if (!file) return { lead: null, error: 'informe --lead <json> ou --file <planilha.csv> --n <linha>' };
+  if (!file) return { lead: null, error: 'pass --lead <json>, or --file <leads.csv> --n <row>' };
   const r = read(file);
   if (r.errors.length) return { lead: null, error: r.errors.join(' · ') };
   const lead = r.leads[(n || 1) - 1];
-  if (!lead) return { lead: null, error: `a planilha tem ${r.leads.length} leads; não existe o de número ${n}` };
+  if (!lead) return { lead: null, error: `the file has ${r.leads.length} leads; there is no number ${n}` };
   return { lead, error: null };
 }
 
@@ -84,7 +84,7 @@ async function main() {
 
   const voz = loadVoice(args.operator);
   if (voz.source !== 'file') {
-    console.error(`sem voz declarada para "${args.operator}". Rode primeiro: npm run onboarding`);
+    console.error(`no voice on file for "${args.operator}". Run this first: npm run onboarding`);
     process.exit(1);
   }
 
@@ -118,15 +118,15 @@ async function main() {
   });
 
   if (brief.go === false) {
-    out(`${B('Não vale escrever para este lead.')}`);
+    out(`${B('Not worth writing to this lead.')}`);
     out(`  ${brief.skipReason}`);
-    out(D('\nIsto é o ICP do seu icp.md decidindo. Se discorda, a tabela é sua: edite e rode de novo.'));
+    out(D('\nThat is your icp.md deciding. If you disagree, the table is yours: edit it and run again.'));
     return;
   }
 
   out('');
   out(B('─'.repeat(72)));
-  out(B(`  Cole tudo abaixo no seu Claude ou ChatGPT  ${D(`(contexto: ${CONTEXT} · voz: ${args.operator})`)}`));
+  out(B(`  Paste everything below into your Claude or ChatGPT  ${D(`(context: ${CONTEXT} · voice: ${args.operator})`)}`));
   out(B('─'.repeat(72)));
   out('');
   out(instruction(args.operator, args.stage));
@@ -134,17 +134,17 @@ async function main() {
   out(renderBrief(brief));
   out('');
   out(B('─'.repeat(72)));
-  out(B('  Fim do que se cola.'));
+  out(B('  End of what you paste.'));
   out('');
   if (!pesquisou) {
-    out(`${D('Sem chave de pesquisa: o briefing tem só o que veio da sua planilha. Com EXA_KEY e')}`);
-    out(`${D('FIRECRAWL_KEY no .env, ele traria o que a empresa publicou e o gancho sai melhor.')}`);
+    out(`${D('No research key: this briefing has only what your file gave it. With EXA_KEY and')}`);
+    out(`${D('FIRECRAWL_KEY in .env, it would read what the company published and the hook gets better.')}`);
     out('');
   }
-  out('Depois que o modelo escrever, passe a mensagem pela sua trava de voz:');
+  out('Once your model writes it, run the message through your voice guard:');
   out(`  ${D(checkCommand(args.operator, args.stage))}`);
   out('');
-  out(D('Passou? Junte as aprovadas num batch e abra o painel. O envio é o último passo, e é seu.'));
+  out(D('Passed? Collect the approved ones and open the panel. Sending is the last step, and it is yours.'));
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {

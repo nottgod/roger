@@ -50,7 +50,7 @@ test('--lead aceita JSON', () => {
 test('--lead com JSON quebrado explica, não estoura', () => {
   const { lead, error } = resolveLead({ leadJson: '{isto não é json' });
   assert.equal(lead, null);
-  assert.match(error, /não é JSON válido/);
+  assert.match(error, /not valid JSON/);
 });
 
 test('--file lê a linha pedida da planilha', () => {
@@ -62,8 +62,8 @@ test('--file lê a linha pedida da planilha', () => {
 test('linha que não existe é erro que diz quantas existem', () => {
   const p = csv('name,company\nAna,NorthPay\n');
   const { error } = resolveLead({ file: p, n: 9 });
-  assert.match(error, /tem 1 leads/);
-  assert.match(error, /número 9/);
+  assert.match(error, /has 1 leads/);
+  assert.match(error, /number 9/);
 });
 
 test('sem --lead e sem --file, diz o que informar', () => {

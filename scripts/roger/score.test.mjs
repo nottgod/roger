@@ -24,7 +24,7 @@ test('classify: lead que passa quente (gap material + timing)', () => {
 test('classify: DESCARTE por não-ICP', () => {
   const r = classify({ ...base, company: 'BigBank', nonIcpFlags: ['enterprise-bank'] });
   assert.equal(r.tier, 'DESCARTE');
-  assert.match(r.reason, /não-ICP/);
+  assert.match(r.reason, /not our market/);
 });
 
 test('classify: DESCARTE por empresa grande demais', () => {
@@ -58,7 +58,7 @@ test('icpGate: budget abaixo do piso descarta', () => {
 test('icpGate: geografia fora da tabela descarta', () => {
   const r = icpGate({ ...base, geo: 'Antarctica' });
   assert.equal(r.pass, false);
-  assert.match(r.reason, /geografia/);
+  assert.match(r.reason, /geography/);
 });
 
 test('gapSignature: 2 sinais = material neste ICP', () => {
