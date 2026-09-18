@@ -4,7 +4,7 @@
 
 Do not open a public issue for a vulnerability. Use
 [GitHub's private advisory form](https://github.com/nottgod/roger/security/advisories/new),
-or email `antoniofmonti@gmail.com` with `roger security` in the subject.
+or email `antonio@useroger.io` with `roger security` in the subject.
 
 Tell me what you found, how to reproduce it, and what it lets someone do. You will get an
 answer — this is one person's project, so expect days, not hours.
