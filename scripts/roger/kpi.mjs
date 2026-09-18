@@ -10,7 +10,7 @@
 //      and the status change events over the REST API (GET, read-only — it NEVER writes),
 //      and reports per pipeline: a funnel snapshot, meetings this month against the target
 //      (goals.md block 2) and the 3 critical conversions (goals.md 2.3).
-//      Agendada, Reunião Realizada->Negociação.
+//      scheduled, and meeting held -> negotiation.
 //
 // It measures BOTH pipelines side by side during a migration between them.
 //

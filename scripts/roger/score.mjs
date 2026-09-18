@@ -50,7 +50,7 @@ const FALLBACK = {
 };
 
 export const DEFAULT_APPROACH = 'Engajamento Contextual';
-export const NO_CASE = 'sem caso direto, citar carteira geral';
+export const NO_CASE = 'no direct case, cite the wider portfolio';
 
 function norm(s) {
   return (s == null ? '' : String(s)).trim().toLowerCase();
@@ -89,7 +89,7 @@ function buildIcp(text, sourceLabel) {
   const missing = [];
 
   const rawNumbers = parseKeyValueTable(text, /##\s*3\.2\.M/);
-  if (!Object.keys(rawNumbers).length) missing.push('3.2.M números');
+  if (!Object.keys(rawNumbers).length) missing.push('3.2.M numbers');
   const numbers = {};
   for (const [key, dflt] of Object.entries(FALLBACK.numbers)) {
     numbers[key] = intOr(rawNumbers[key], dflt);
@@ -116,7 +116,7 @@ function buildIcp(text, sourceLabel) {
   const nonIcp = new Set();
   const nonIcpRows = parseTable(text, /##\s*3\.6\.M/);
   if (!nonIcpRows.length) {
-    missing.push('3.6.M não-ICP');
+    missing.push('3.6.M not our market');
     FALLBACK.nonIcp.forEach((s) => nonIcp.add(s));
   } else {
     for (const row of nonIcpRows) {

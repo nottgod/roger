@@ -25,8 +25,10 @@ const FALLBACK = {
 // Labels that, in the "next task" column, mean end instead of chain.
 const END_LABELS = /encerr|fim|nenhuma|none|end|stop/i;
 
+// The row labels, in both languages: the file shipped in Portuguese for a long time, and
+// anyone who already edited theirs should not have it break under them.
 const LABEL_TO_KEY = {
-  'mensagem inicial': 'MENSAGEM_INICIAL',
+  'first message': 'MENSAGEM_INICIAL', 'mensagem inicial': 'MENSAGEM_INICIAL',
   'fup 1': 'FUP_1', 'fup 2': 'FUP_2', 'fup 3': 'FUP_3',
   'fup 4': 'FUP_4', 'fup 5': 'FUP_5',
   'fup >5': 'FUP_MAIS', 'fup >5 (1ª)': 'FUP_MAIS', 'fup >5 (2ª)': 'FUP_MAIS',
@@ -35,7 +37,7 @@ const LABEL_TO_KEY = {
 export function loadCadencia() {
   try {
     const md = readFileSync(CADENCIA_MD, 'utf8');
-    const section = md.split(/##\s*Cadência de FUPs/i)[1] || '';
+    const section = md.split(/##\s*(?:Follow-up cadence|Cadência de FUPs)/i)[1] || '';
     const rows = section.split('\n').filter(l => /^\|/.test(l));
     const map = {};
     for (const row of rows) {
@@ -58,10 +60,10 @@ export function loadCadencia() {
       if (!map.FUP_MAIS) map.FUP_MAIS = { next: null, days: null };
       return { map, source: 'cadencia-funil.md' };
     }
-    console.error('[cadencia] parse incompleto de cadencia-funil.md, usando fallback');
+    console.error('[cadence] incomplete parse of cadencia-funil.md, using the fallback');
     return { map: FALLBACK, source: 'fallback' };
   } catch (e) {
-    console.error('[cadencia] erro lendo cadencia-funil.md, usando fallback:', e.message);
+    console.error('[cadence] error reading cadencia-funil.md, using the fallback:', e.message);
     return { map: FALLBACK, source: 'fallback' };
   }
 }
@@ -71,10 +73,10 @@ export function nextValidDate(fromDate, days) {
   const d = new Date(fromDate.getTime() + days * 86400_000);
   // day of the week in BRT (UTC-3)
   const brt = new Date(d.getTime() - 3 * 3600_000);
-  const dow = brt.getUTCDay(); // 0=dom 1=seg ... 6=sáb
+  const dow = brt.getUTCDay(); // 0=Sun 1=Mon ... 6=Sat
   let push = 0;
   if (dow === 5) push = 3;      // sex -> seg
-  else if (dow === 6) push = 2; // sáb -> seg
+  else if (dow === 6) push = 2; // Sat -> Mon
   else if (dow === 0) push = 1; // dom -> seg
   return new Date(d.getTime() + push * 86400_000);
 }

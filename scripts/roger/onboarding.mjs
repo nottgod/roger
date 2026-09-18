@@ -1,23 +1,23 @@
 #!/usr/bin/env node
-// onboarding.mjs — o primeiro contato da Roger (as sete telas do design de 11/09).
+// onboarding.mjs — the first contact with Roger (the seven screens).
 //
-//   1. Quem eu sou        2. Como isto vai funcionar     3. Sua voz
-//   4. Seu mercado        5. De onde vêm os leads        6. Pesquisa
-//   7. O envio
+//   1. Who I am           2. How this will work          3. Your voice
+//   4. Your market        5. Where the leads come from   6. Research
+//   7. Sending
 //
-// A tela 3 é a mais importante: a resposta da entrevista não vira só prosa na persona,
-// ela CONFIGURA a trava de voz (toVoiceConfig → voice.json, lido por lint-voz.mjs).
-// A tela 4 faz o mesmo com o ICP: as respostas viram as tabelas `.M` do icp.md que o
-// score.mjs parseia. Nada de gosto de ninguém volta para dentro do código.
+// Screen 3 is the most important: the interview answer does not just become prose in the
+// persona, it CONFIGURES the voice guard (toVoiceConfig → voice.json, read by lint-voz.mjs).
+// Screen 4 does the same for the ICP: the answers become the `.M` tables of icp.md that
+// score.mjs parses. Nobody's taste ever goes back into the code.
 //
-// Gravar em disco é sempre decisão de quem responde: a versão interativa PERGUNTA no
-// fim, e os modos não interativos só gravam com --write. Zero dependências (só node:*).
+// Writing to disk is always the answerer's call: the interactive version ASKS at the end,
+// and the non-interactive modes only write with --write. Zero dependencies (node:* only).
 //
-// uso:
-//   node onboarding.mjs            a entrevista interativa (pergunta se quer salvar no fim)
-//   node onboarding.mjs --write    salva sem perguntar
-//   node onboarding.mjs --demo     percorre tudo com respostas de exemplo, sem gravar
-//   node onboarding.mjs --intro    só a tela 1
+// usage:
+//   node onboarding.mjs            the interactive interview (asks before saving)
+//   node onboarding.mjs --write    saves without asking
+//   node onboarding.mjs --demo     walks through it all with example answers, saving nothing
+//   node onboarding.mjs --intro    screen 1 only
 
 import { createInterface } from 'node:readline/promises';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -34,7 +34,7 @@ const D = (s) => `\x1b[2m${s}\x1b[0m`;
 const out = (s = '') => process.stdout.write(s + '\n');
 const rule = () => out(D('─'.repeat(72)));
 
-// ── Tela 1 ────────────────────────────────────────────────────────────────────
+// ── Screen 1 ──────────────────────────────────────────────────────────────────
 const INTRO = `
 ${B("I'm Roger.")}
 
@@ -53,9 +53,9 @@ ${B('Build one better than me. That\'s the point.')}
 ${B('Roger that.')}
 `;
 
-// ── Tela 2 ────────────────────────────────────────────────────────────────────
-// Não é só "o que vem agora": é o MODELO DE USO. Quem não entende que os arquivos são
-// dela e que ela os alimenta com o tempo, usa uma vez e abandona.
+// ── Screen 2 ──────────────────────────────────────────────────────────────────
+// Not just "what comes next": this is the MODEL OF USE. Someone who does not grasp that
+// the files are theirs, and that they feed them over time, uses it once and walks away.
 const HOW = `
 ${B('How this works')}
 
@@ -99,7 +99,7 @@ ${D('You can do the whole interview first and sort the keys out after. Nothing h
 `;
 
 
-// ── Tela 3: a entrevista de voz ───────────────────────────────────────────────
+// ── Screen 3: the voice interview ─────────────────────────────────────────────
 const AXES = [
   {
     key: 'grammar',
@@ -153,8 +153,8 @@ const AXES = [
   },
 ];
 
-// O canal vem primeiro porque muda o resto: numa DM quase ninguém assina, num e-mail
-// quase todo mundo assina, e o braço de envio hoje só dirige o LinkedIn.
+// The channel comes first because it changes the rest: in a DM almost nobody signs off, in
+// an email almost everybody does, and the sending arm today only drives LinkedIn.
 const CHANNEL = {
   key: 'channels',
   q: 'Where do you write to people?',
@@ -165,11 +165,11 @@ const CHANNEL = {
   ],
 };
 
-// A pergunta da assinatura depende do canal: no LinkedIn ela quase nunca existe.
+// The sign-off question depends on the channel: on LinkedIn it hardly ever exists.
 function freeQuestions(channels) {
-  // Um sign-off é a linha de fecho com o nome — "Best, Ana". NÃO é a última frase da
-  // mensagem: no primeiro teste real alguém escreveu uma frase de fechamento inteira
-  // aqui, e ela virou "assinatura". Por isso a pergunta mostra o que é.
+  // A sign-off is the closing line with your name — "Best, Ana". It is NOT the last sentence
+  // of the message: in the first real test someone wrote a whole closing sentence here, and
+  // it became their "sign-off". That is why the question now shows what one is.
   const oQueE = 'A sign-off is the closing name line: "Best, Ana", "Sincerely, Ana",\n  "Cheers, Ana". It is not the last sentence of your message.';
   const assinatura = {
     linkedin: `${oQueE}\n  On LinkedIn almost nobody uses one. Do you? Press Enter for no, or paste yours`,
@@ -211,7 +211,7 @@ half that a questionnaire cannot reach — it is why your messages will not soun
 like everyone else running the same tool.
 `;
 
-// ── Tela 4: o mercado (vira as tabelas .M do icp.md) ──────────────────────────
+// ── Screen 4: the market (becomes the .M tables of icp.md) ────────────────────
 const MARKET_INTRO = `
 ${B('Your market.')}
 
@@ -243,7 +243,7 @@ const MARKET = [
   },
 ];
 
-// ── Tela 5: de onde vêm os leads ──────────────────────────────────────────────
+// ── Screen 5: where the leads come from ───────────────────────────────────────
 const LEADS_INTRO = `
 ${B('Where your leads come from.')}
 
@@ -271,7 +271,7 @@ ${B('Before I touch a CRM, three rules that are code, not promises:')}
   ${B('The first run is read-only.')}  You watch me work before I am allowed to write.
 `;
 
-// ── Tela 7: o envio ───────────────────────────────────────────────────────────
+// ── Screen 7: sending ─────────────────────────────────────────────────────────
 const SEND = `
 ${B('The send.')}
 
@@ -321,9 +321,9 @@ const DEMO = {
   leadSource: 'spreadsheet',
 };
 
-// ── Da entrevista para a configuração da trava de voz ─────────────────────────
-// Quanto cabe numa mensagem, por canal. Uma DM longa ainda é curta perto de um e-mail;
-// tratar as duas com o mesmo teto fazia a Roger liberar 900 caracteres no LinkedIn.
+// ── From the interview to the voice guard configuration ───────────────────────
+// How much fits in a message, per channel. A long DM is still short next to an email;
+// treating both with the same cap had Roger allowing 900 characters on LinkedIn.
 export const CAPS = {
   linkedin: { short: 300, medium: 450, long: 700, connection: 300 },
   email: { short: 600, medium: 900, long: 1400, connection: 300 },
@@ -337,7 +337,7 @@ export function toVoiceConfig(a) {
     language: a.language,
     channels: a.channels || 'linkedin',
     maxChars,
-    // O ponto do design: a resposta da pessoa liga e desliga regra.
+    // The point of the design: the person's answer turns a rule on and off.
     allowHumanSlip: a.grammar !== 'impeccable',
     requireCleanGrammar: a.grammar === 'impeccable',
     banEmDash: a.emDash === 'never',
@@ -400,15 +400,15 @@ ${a.story || '(not recorded yet)'}
 `;
 }
 
-// ── Da entrevista para as tabelas .M do icp.md ────────────────────────────────
+// ── From the interview to the .M tables of icp.md ─────────────────────────────
 function splitList(s) {
   return String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
 }
 
-// Aberturas: uma pessoa abre de vários jeitos, e insistir numa só perde informação.
-// Uma virou string; várias viram lista.
-// Resposta negativa é negativa, não conteúdo. No primeiro teste real alguém respondeu
-// "no" à pergunta da assinatura e virou uma assinatura escrita "no".
+// Openings: a person opens in several ways, and insisting on one loses information.
+// One becomes a string; several become a list.
+// A negative answer is a negative, not content. In the first real test someone answered
+// "no" to the sign-off question and ended up with a sign-off that read "no".
 const NEGATIVAS = new Set(['no', 'n', 'nao', 'não', 'nope', 'nenhuma', 'nenhum', 'none', '-', 'x']);
 function ouNulo(s) {
   const v = String(s || '').trim();
@@ -424,8 +424,8 @@ function splitSemi(s) {
 
 const slugify = (s) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-// Sinais genéricos, para a pessoa ter um ponto de partida que já funciona.
-// Ela edita depois: são as duas listas que mais mudam de negócio para negócio.
+// Generic signals, so the person starts from something that already works.
+// They edit them later: these are the two lists that change most from business to business.
 const DEFAULT_TIMING = [
   ['recentFunding', 'Raised money in the last 12 months'],
   ['hiringForTheProblem', 'Hiring for the problem you solve'],
@@ -440,10 +440,10 @@ const DEFAULT_GAP = [
   ['inconsistentStory', 'Site and founder tell different stories'],
 ];
 
-// O diagnóstico: a dor que abre toda mensagem, e o vocabulário que faz soar de dentro.
-// Sem este arquivo o briefing abre com "dor central não declarada", que parece defeito.
-// Os templates. O briefing aponta para este arquivo, então ele tem de existir — e com
-// a frase dela dentro, não com a de outra empresa.
+// The diagnosis: the pain every message opens with, and the vocabulary that sounds like an insider.
+// Without this file the briefing opens with "core pain not declared", which reads as a bug.
+// The templates. The briefing points at this file, so it has to exist — and with her own
+// sentence inside it, not another company's.
 export function renderTemplates(a) {
   const oQueVende = String(a.whatYouSell || '').trim() || '{what you do, in one sentence}';
   return `# ${a.contextName || 'your context'} — message templates
@@ -500,7 +500,7 @@ One line, no \`|\`.
 Start with one row per segment, all sharing what you told the interview. **Refine them
 one at a time** — the narrative column is where the message stops sounding generic.
 
-| Segmento | Narrativa-chave (1 linha) | Vocabulário pra soar crível |
+| Segment | Key narrative (one line) | Vocabulary that sounds like an insider |
 | --- | --- | --- |
 ${linhas}
 `;
@@ -592,7 +592,7 @@ ${DEFAULT_GAP.map(([k, l]) => `| ${k} | ${l} |`).join('\n')}
 `;
 }
 
-// ── Condução ──────────────────────────────────────────────────────────────────
+// ── Flow ──────────────────────────────────────────────────────────────────────
 async function askChoice(rl, axis) {
   out(`\n${B(axis.q)}`);
   axis.options.forEach(([, text], i) => out(`  ${i + 1}. ${text}`));
@@ -646,7 +646,7 @@ async function interview(rl) {
   return a;
 }
 
-// ── Telas de saída ────────────────────────────────────────────────────────────
+// ── Closing screens ───────────────────────────────────────────────────────────
 function showVoice(a, cfg) {
   rule();
   out(B('This is what I heard.'));
@@ -762,14 +762,14 @@ async function main() {
   showSend();
   showClose(answers);
 
-  // Salvar. A versão interativa PERGUNTA no fim, porque exigir a flag de antemão
-  // significava refazer 25 minutos de entrevista para quem não sabia dela.
+  // Saving. The interactive version ASKS at the end, because requiring the flag up front
+  // meant redoing 25 minutes of interview for anyone who did not know about it.
   let salvar = args.includes('--write');
   if (!salvar && !args.includes('--demo') && process.stdin.isTTY) {
     const rl2 = createInterface({ input: process.stdin, output: process.stdout });
     try {
-      // Pergunta até entender. Resposta não reconhecida NUNCA pode significar "descarta":
-      // no primeiro teste real, quem respondeu outra coisa perdeu 25 minutos de entrevista.
+      // Keep asking until it is understood. An unrecognised answer can NEVER mean "discard":
+      // in the first real test, anyone who answered something else lost 25 minutes of interview.
       const SIM = ['yes', 'y', 'sim', 's', ''];
       const NAO = ['no', 'n', 'nao', 'não'];
       for (;;) {

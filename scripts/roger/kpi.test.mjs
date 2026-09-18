@@ -1,4 +1,4 @@
-// kpi.test.mjs — testes das funções puras do funil (Roger v5, F4). Zero rede.
+// kpi.test.mjs — tests for the pure funnel functions. Zero network.
 // Rodar: node --test scripts/roger/kpi.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,8 +6,8 @@ import {
   funnelSnapshot, countEntries, meetingsCount, criticalConversions, monthRange,
 } from './kpi.mjs';
 
-// Pipeline fictício, definido aqui: os IDs de verdade são de cada conta e vêm vazios
-// no repo. O que estes testes provam é a agregação, não a configuração de ninguém.
+// A fictional pipeline, defined here: the real IDs belong to each account and ship empty
+// in the repo. What these tests prove is the aggregation, not anyone's configuration.
 const MAIN = {
   id: 111,
   label: 'Pipeline de teste',
@@ -21,7 +21,7 @@ const OUTRO = { id: 777, stages: { entrada: 7771 } };
 const S = MAIN.stages;
 
 // ── funnelSnapshot ──
-test('funnelSnapshot: conta por etapa, ignora outro pipeline, status fora do mapa -> _other', () => {
+test('funnelSnapshot: counts per stage, ignores other pipelines, an unmapped status -> _other', () => {
   const leads = [
     { id: 1, pipeline_id: MAIN.id, status_id: S.entrada },
     { id: 2, pipeline_id: MAIN.id, status_id: S.entrada },
@@ -38,7 +38,7 @@ test('funnelSnapshot: conta por etapa, ignora outro pipeline, status fora do map
   assert.equal(snap._other, 1);
 });
 
-test('funnelSnapshot: lista vazia/null não crasha', () => {
+test('funnelSnapshot: an empty or null list does not crash', () => {
   assert.equal(funnelSnapshot([], MAIN).entrada, 0);
   assert.equal(funnelSnapshot(null, MAIN)._other, 0);
 });
@@ -48,7 +48,7 @@ function ev(entityId, statusId, pipelineId = MAIN.id) {
   return { type: 'lead_status_changed', entity_id: entityId, value_after: [{ lead_status: { id: statusId, pipeline_id: pipelineId } }] };
 }
 
-test('countEntries: conta entradas (value_after) por etapa, filtra por leadIdSet e pipeline', () => {
+test('countEntries: counts entries (value_after) per stage, filtered by leadIdSet and pipeline', () => {
   const set = new Set([10, 11, 12]);
   const events = [
     ev(10, S.desenvolvimento),
@@ -65,20 +65,20 @@ test('countEntries: conta entradas (value_after) por etapa, filtra por leadIdSet
   assert.equal(c.reuniaoAgendada, 1); // o do lead 99 não conta
 });
 
-test('countEntries: sem leadIdSet conta todos os leads daquele pipeline', () => {
+test('countEntries: with no leadIdSet it counts every lead in that pipeline', () => {
   const events = [ev(1, S.negociacao), ev(2, S.negociacao)];
   assert.equal(countEntries(events, MAIN).negociacao, 2);
 });
 
 // ── meetingsCount ──
-test('meetingsCount: lê entradas em Reunião Agendada', () => {
+test('meetingsCount: reads entries into the meeting scheduled stage', () => {
   assert.equal(meetingsCount({ reuniaoAgendada: 4 }), 4);
   assert.equal(meetingsCount({}), 0);
   assert.equal(meetingsCount(null), 0);
 });
 
 // ── criticalConversions ──
-test('criticalConversions: 3 taxas de fluxo; denominador 0 -> rate null', () => {
+test('criticalConversions: 3 flow rates; a denominator of 0 -> rate null', () => {
   const conv = criticalConversions({ desenvolvimento: 4, qualificado: 2, reuniaoAgendada: 2, reuniaoRealizada: 1, negociacao: 1 });
   assert.equal(conv.devToQualificado.rate, 0.5);
   assert.equal(conv.qualificadoToReuniao.rate, 1); // 2/2
@@ -88,7 +88,7 @@ test('criticalConversions: 3 taxas de fluxo; denominador 0 -> rate null', () => 
 });
 
 // ── monthRange ──
-test('monthRange: intervalo unix do mês em BRT (UTC-3)', () => {
+test('monthRange: the unix range of the month in BRT (UTC-3)', () => {
   const { from, to, label } = monthRange('2026-06');
   assert.equal(label, '2026-06');
   // 2026-06-01 00:00 BRT = 2026-06-01 03:00 UTC

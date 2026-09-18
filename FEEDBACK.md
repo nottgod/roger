@@ -69,9 +69,9 @@ Not worth reporting, they are on the list:
   interview writes yours. Delete them whenever you like.
 - There is no CRM adapter other than Kommo yet. The spreadsheet path is the intended one
   for now.
-- The code comments and the test names are in Portuguese, while everything written for
-  you is in English. It is the author's first language showing through. Real, known, and
-  it does not affect anything you run.
+- The repo was written in Portuguese first and translated in one pass on 18/09/2026.
+  Commits before that date are still in Portuguese, and somewhere there is probably a
+  sentence that reads oddly. Tell me and I will fix it.
 - Sending needs Playwright installed separately and a manual LinkedIn login. That is
   deliberate, not an oversight.
 - The sending arm has never run against the real LinkedIn — only against a fake browser in

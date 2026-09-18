@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// gen.mjs — camada Geração (Roger v5, F3). Motor único, dois modos.
-// FILOSOFIA: determinismo no QUE entra (este builder), liberdade no COMO sai (LLM redige),
-// trava dura na saída (lint-voz.mjs). buildGenerationBrief() é PURA e no-throw: recebe o report
-// já classificado do intel.mjs (NÃO re-classifica, NÃO chama score.mjs) + contato/stage do Kommo,
-// e monta o brief das 3 camadas (diagnóstico, cultura, redação). Em mode:'conversation' a camada
-// Redação vira leitura-de-sinais + BANT + objeção->reframe + regra-de-voz.
+// gen.mjs — the Generation layer. One engine, two modes.
+// PHILOSOPHY: determinism in WHAT goes in (this builder), freedom in HOW it comes out (the
+// model writes), a hard guard on the way out (lint-voz.mjs). buildGenerationBrief() is PURE
+// and never throws: it takes the already classified report from intel.mjs (it does NOT
+// re-classify, it does NOT call score.mjs) plus contact and stage, and builds the brief in
+// three layers (diagnosis, culture, wording). In mode:'conversation' the wording layer
+// becomes reading-the-signal + BANT + objection→reframe + the voice rule.
 //
-// NÃO mexe na cadência (só LÊ via loadCadencia). conversation mode NÃO cria task no Kommo.
-// Loaders parseiam os .md do context pack em runtime (mesmo padrão de cadencia.mjs) com
-// FALLBACK hardcoded (no-throw). ESM, Node 24. Sem deps externas.
-//
-// CLI: node gen.mjs '{"contact":{...},"company":"...","stage":"FUP_2","intel":{...},"mode":"outbound"}'
+// It does NOT touch the cadence (it only READS it via loadCadencia). conversation mode
+// creates no task in the CRM. The loaders parse the context pack .md files at runtime (the
+// same pattern as cadencia.mjs) with a hardcoded FALLBACK (never throws). ESM, Node 24.
+// CLI: node gen.mjs '{"contact":{...},"company":"...","stage":"FUP_2","intel":{...}}'
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -21,21 +21,21 @@ import { loadVoice } from './lib/voice.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const RAPPORT = join(ROOT, 'rapport');
 
-// Qual contexto e qual operador. TODO (Bloco C): exigir as duas variáveis e falhar alto
-// quando faltarem; o default abaixo existe só para não quebrar a instalação atual.
+// Which context and which operator. TODO: require both variables and fail loudly when they
+// are missing; the default below exists only so the current install does not break.
 export const CONTEXT = process.env.ROGER_CONTEXT || 'example';
 export const DEFAULT_OPERATOR = process.env.ROGER_OPERATOR || 'example';
 const PACK = join(ROOT, 'rapport', 'contexts', CONTEXT);
 
-// Arquivos de contexto que faltaram na leitura. O fallback embutido evita o crash,
-// mas o silêncio era o problema: sem este registro, um pacote de contexto pela metade
-// gerava mensagem com o texto de outra empresa sem ninguém perceber.
+// Context files that were missing when read. The built-in fallback avoids the crash, but the
+// silence was the problem: without this record, a half-finished context pack produced a
+// message carrying another company's text and nobody noticed.
 const missingPackFiles = new Set();
 export function contextHealth() {
   return { context: CONTEXT, pack: PACK, missing: [...missingPackFiles] };
 }
 
-// ── leitura crua + parser de tabela markdown (padrão cadencia.mjs) ──
+// ── raw reading + markdown table parser (the cadencia.mjs pattern) ──
 function readPack(relPath, base = PACK) {
   try {
     return readFileSync(join(base, relPath), 'utf8');
@@ -45,9 +45,9 @@ function readPack(relPath, base = PACK) {
   }
 }
 
-// Extrai linhas de tabela (| a | b | c |) que aparecem DEPOIS do header que casa headerRe.
-// Retorna array de arrays de células (trim). Ignora a linha separadora |---|. Para no primeiro
-// bloco não-tabela depois de a tabela já ter começado.
+// Pulls table rows (| a | b | c |) that appear AFTER the header matching headerRe. Returns an
+// array of arrays of cells (trimmed). Skips the separator row |---|. Stops at the first
+// non-table block once the table has started.
 export function parseTable(text, headerRe) {
   if (!text) return [];
   const section = headerRe ? (text.split(headerRe)[1] || '') : text;
@@ -61,7 +61,7 @@ export function parseTable(text, headerRe) {
   return rows;
 }
 
-// ── FALLBACK: espelham os .md. Se o parse falhar, o brief degrada sem crashar. ──
+// ── FALLBACK: these mirror the .md files. If the parse fails, the brief degrades without crashing. ──
 const GEO_TO_REGION = {
   usa: 'USA NY', us: 'USA NY', 'united states': 'USA NY',
   uk: 'UK', 'united kingdom': 'UK',
@@ -96,7 +96,7 @@ const SEG_ALIAS = {
   payments: 'payments', marketplaces: 'marketplaces',
   neobanks: 'neobanks', lending: 'lending',
 };
-// Espelha a tabela 3.12 do diagnosis.md do contexto ativo. Se o .md tiver a linha, ela vence.
+// Mirrors table 3.12 of the active diagnosis.md. If the .md has the row, the .md wins.
 const FALLBACK_VOCAB = {
   payments: { narrativa: 'Cada provedor novo traz um arquivo de settlement que ninguem assume', vocab: 'settlement file, chargeback, payout window, taxas do provedor' },
   marketplaces: { narrativa: 'Split de pagamento faz o ledger nunca bater com o banco na primeira tentativa', vocab: 'split payment, payout do vendedor, escrow, take rate' },
@@ -125,8 +125,8 @@ const FALLBACK_APPROACH = {
   Institucional: 'senior C-level, a firm or family office, formal register',
 };
 
-// Só o ÂNGULO do toque. O intervalo (D+N) vem da cadência (fonte única: cadencia-funil.md via touchAngle).
-// Prospecção DIRETA: todo toque, exceto o handshake e o break-up, fecha chamando pro papo.
+// Only the ANGLE of the touch. The interval (D+N) comes from the cadence (single source:
+// cadencia-funil.md via touchAngle). Every touch except the handshake and the break-up closes by asking to talk.
 const STAGE_ANGLE = {
   MENSAGEM_INICIAL: 'first touch, DIRECT: a one-line hook + what you do + ask for a call. With a campaign: a short handshake, no pitch, no question',
   connection: 'connection request: under 300 chars, no call request',
@@ -138,9 +138,9 @@ const STAGE_ANGLE = {
   FUP_MAIS: 'the honest last try (break-up), door left open, no call request (converts 5-10%)',
 };
 
-// ── templates da mensagem ──────────────────────────────────────────────────────
-// Fonte: `mensagens.md` do context pack ativo. O fallback abaixo é um ESQUELETO
-// genérico de propósito: o que a empresa faz é do contexto, não do motor.
+// ── message templates ──────────────────────────────────────────────────────────
+// Source: `mensagens.md` of the active context pack. The fallback below is a deliberately
+// generic SKELETON: what the company does belongs to the context, not to the engine.
 const MSGS_FILE = 'mensagens.md';
 const FALLBACK_TEMPLATES = {
   M1: "Great to connect, {Name}! I'll write to you shortly with some context on why I reached out.",
@@ -167,7 +167,7 @@ export function contextTemplate(key) {
   return FALLBACK_TEMPLATES[key] || null;
 }
 
-// Campanha pré-pronta (CF Campanha): M1 na Mensagem Inicial, M2 na FUP_1. Sem campanha: MI = M2-direto.
+// A ready-made campaign: M1 on the first message, M2 on FUP_1. With no campaign: the first message is M2-direct.
 export function templateKeyFor(stage, campanha) {
   const s = String(stage || '').toUpperCase();
   const isCampaign = !!(campanha && String(campanha).trim());
@@ -176,16 +176,16 @@ export function templateKeyFor(stage, campanha) {
   return null;
 }
 
-// Fallback de regras de voz. A voz de verdade vive em operators/<slug>/voice.json
-// (campo `rules`), gerado pela entrevista. Isto aqui é só o que sobra quando não há voz
-// nenhuma declarada — e `voiceSnippets` avisa quando está neste caso.
+// Fallback voice rules. The real voice lives in operators/<slug>/voice.json (the `rules`
+// field), written by the interview. This here is only what is left when no voice was
+// declared at all — and `voiceSnippets` says so when that is the case.
 const FALLBACK_VOICE_RULES = [
   'oral e direto, do jeito que a pessoa fala',
   'uma pergunta só, aberta, que dá vontade de responder',
   'tom diagnóstico, não venda: alguém que viu um detalhe, não um vendedor pedindo tempo',
 ];
 
-// ── helpers puros ──
+// ── pure helpers ──
 export function cultureLookup(geo) {
   const key = (geo == null ? '' : String(geo)).trim().toLowerCase();
   const region = GEO_TO_REGION[key] || null;
@@ -202,7 +202,7 @@ export function cultureLookup(geo) {
   return {
     geo: geo || null,
     region: region || '(geo não mapeado, default registro neutro)',
-    registro: base ? base.registro : 'direto, bottom-line primeiro (geo não mapeado)',
+    registro: base ? base.registro : 'direct, bottom line first (geo not mapped)',
     abertura: base ? base.abertura : '',
     transversal,
   };
@@ -211,8 +211,8 @@ export function cultureLookup(geo) {
 export function segmentVocab(segment) {
   const slug = (segment == null ? '' : String(segment)).trim().toLowerCase();
   const label = SEG_ALIAS[slug] || slug;
-  // segment vazio/desconhecido: degrada pra null. Sem isto, label '' + rowLabel.includes('')
-  // sempre-true fazia o loop casar o CABEÇALHO da tabela 3.12 e vazá-lo como narrativa/vocab pro brief.
+  // an empty or unknown segment degrades to null. Without this, label '' + rowLabel.includes('')
+  // was always true, so the loop matched the HEADER of table 3.12 and leaked it into the brief.
   if (!label) return { segment: segment || null, narrativa: null, vocab: null };
   let parsed = null;
   const rows = parseTable(readPack('diagnosis.md'), /##\s*3\.12/);
@@ -256,8 +256,8 @@ export function voiceSnippets(operator = DEFAULT_OPERATOR) {
     personaFile: join(RAPPORT, rel),
     loaded: txt.length > 0,
     rules,
-    // De onde a voz veio: 'file' = voice.json da pessoa; 'defaults' = ninguém declarou,
-    // estamos escrevendo com regra genérica; 'invalid' = arquivo quebrado.
+    // Where the voice came from: 'file' = the person's voice.json; 'defaults' = nobody
+    // declared one, we are writing with generic rules; 'invalid' = the file is broken.
     voiceSource: resolved.source,
     voiceFile: resolved.path,
     voiceError: resolved.error,
@@ -265,9 +265,9 @@ export function voiceSnippets(operator = DEFAULT_OPERATOR) {
   };
 }
 
-// ── camada diagnóstico (constante global) ──
-// A dor central vem do contexto (tabela `3.9.M` do diagnosis.md). O fallback não descreve
-// negócio nenhum de propósito: ele manda a pessoa escrever a dela.
+// ── the diagnosis layer ──
+// The core pain comes from the context (table `3.9.M` of diagnosis.md). The fallback
+// describes no business on purpose: it tells the person to write their own.
 const FALLBACK_DOR_CENTRAL = 'dor central não declarada — escreva a sua na tabela 3.9.M do diagnosis.md do seu contexto, em uma linha';
 
 let _dorCentral = null;
@@ -341,8 +341,8 @@ function buildOutboundBrief(input) {
       taskText,
       templateKey,
       template: templateKey ? contextTemplate(templateKey) : null,
-      // relativo de propósito: este briefing é colado num chat, e caminho absoluto
-      // de outra máquina não ajuda ninguém.
+      // relative on purpose: this briefing gets pasted into a chat, and an absolute path
+      // from someone else's machine helps nobody.
       templatesFile: `rapport/contexts/${CONTEXT}/${MSGS_FILE}`,
       rule: campanha
         ? 'campanha pré-pronta: usar o template (variar levemente, anti-blast). Cadência já semeada nos cards — NUNCA criar FUP nova'
@@ -376,11 +376,11 @@ function buildOutboundBrief(input) {
   };
 }
 
-// ── conversation: objeções e BANT vêm do CONTEXTO, não do motor ────────────────
-// Fonte: tabelas `C.3.M` (objeções) e `C.2.M` (BANT) do `conversation.md` do pacote ativo.
-// Os fallbacks abaixo são genéricos de propósito: a doutrina comercial de uma empresa não
-// pertence ao código. Na coluna `match`, alternativas são separadas por `;;`, porque `|`
-// é o separador de célula do markdown.
+// ── conversation: objections and BANT come from the CONTEXT, not from the engine ──
+// Source: tables `C.3.M` (objections) and `C.2.M` (BANT) of the active `conversation.md`.
+// The fallbacks below are generic on purpose: one company's sales doctrine does not belong
+// in the code. In the `match` column, alternatives are separated by `;;`, because `|` is the
+// markdown cell separator.
 const FALLBACK_OBJECTIONS = [
   { key: 'agency', match: /(don'?t|do not|não)\s+(work with|trabalh\w*\s+com).{0,14}agenc|no agencies|sem agência/i,
     reframe: 'Afirmar a categoria positiva do que você faz, sem repetir o termo que ele rejeitou. Conceder onde ele tem razão e contornar pelo lado.' },
@@ -436,10 +436,10 @@ function classifySignal(text) {
   if (/stop messaging|leave me alone|i said no|please respect|not interested at all|fuck off/.test(t)) return 'discard';
   if (/\b(price|pricing|how much|preço|quanto custa)\b/.test(t) || /just send|send me (a )?proposal|i'?ll think about it|think about it/.test(t)) return 'alert';
   if (/we don'?t work with agenc|in[\s-]?house/.test(t)) return 'alert'; // objeção recuperável
-  // recusa educada: NÃO é positive (o substring 'interested' nu sequestrava o sinal). É alerta, não descarte.
+  // a polite refusal: NOT positive (the bare substring 'interested' used to hijack the signal). It is a warning, not a discard.
   if (/\b(not|no longer|never)\s+(interested|looking)\b|uninterested|not (a )?(good )?fit|sem interesse|n[ãa]o (tenho|temos|há) interesse/.test(t)) return 'alert';
-  // referral = lead te passa pro DECISOR (terceiro). Verbos ambíguos ancorados a 3a pessoa pra não pegar
-  // convite self-referencial ("talk to you", "reach out to me"), que é caminho positive/chefe-modo, não handoff.
+  // referral = the lead hands you to the DECISION MAKER (a third party). Ambiguous verbs are anchored to the third
+  // person so a self-referential invite ("talk to you", "reach out to me") is not caught: that is the positive path, not a handoff.
   if (/best person|right person to|connect you with|put you in touch|introduce you to|drop (him|her|them) a|(message|ping|contact) (him|her|them)|loop (in|him|her|them)|(reach out to|talk to|speak (to|with)) (him|her|them|our|the|my)|is the (best |right )?person/i.test(t)) return 'referral';
   if (/how (do|does)|tell me more|references|case stud(y|ies)|\bcases\b|timeline|when (can|could)|happy to|let'?s (chat|talk|call)|i'?m interested|we'?re interested|we'd be interested|interested in|sounds (interesting|good)/.test(t)) return 'positive';
   return 'neutral';
@@ -510,7 +510,7 @@ export function buildGenerationBrief(input = {}) {
   return mode === 'conversation' ? buildConversationBrief(inp) : buildOutboundBrief(inp);
 }
 
-// ── render: GenerationBrief -> markdown legível pro LLM redigir ──
+// ── render: GenerationBrief -> markdown the model can read and write from ──
 function list(arr) { return (arr && arr.length) ? arr.map((x) => `- ${x}`).join('\n') : '- (none)'; }
 
 export function renderBrief(brief) {

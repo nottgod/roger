@@ -23,7 +23,7 @@ Two or more of these and the gap is material (see `3.11.M` in `icp.md` for the m
 
 ## 3.12. Vocabulary and narrative by segment
 
-| Segmento | Narrativa-chave (1 linha) | Vocabulário pra soar crível |
+| Segment | Key narrative (one line) | Vocabulary that sounds like an insider |
 | --- | --- | --- |
 | **payments** | Every new provider adds a settlement file that nobody owns | settlement file, chargeback, payout window, provider fees |
 | **marketplaces** | Split payments mean the ledger never matches the bank on the first try | split payment, seller payout, escrow, take rate |

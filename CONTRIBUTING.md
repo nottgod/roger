@@ -23,8 +23,10 @@ If the tests need the network to pass, something is wrong with the test, not wit
 connection. The core has zero dependencies on purpose — a PR that adds one to
 `package.json` needs to say in the description why the standard library could not do it.
 
-Commits in this repo say what changed and why it mattered, in one line, in the imperative.
-Look at `git log` and match it.
+Commits here say what changed and why it mattered, in one line. The history has a seam in
+it: everything up to 18/09/2026 is in Portuguese, because that is the author's first
+language and this repo was private. From that day on it is English, like the rest. Write
+yours in English and you are matching where the project is going, not where it came from.
 
 ## The one rule that is not about code
 
@@ -46,7 +48,8 @@ catches shapes it recognises, not judgment you skipped.
    runs it for real and reports back is doing the highest-value thing available.
 2. **A CRM adapter that is not Kommo.** The spreadsheet path works; the CRM path assumes
    Kommo. The seam is `kommo-config.mjs` and it is narrower than it looks.
-3. **Comments and test names are in Portuguese** while everything written for the reader is
-   in English. Translating them is dull and genuinely helps.
+3. **A second pair of eyes on the English.** The whole repo was translated from Portuguese
+   in one pass, by its author and a model. Somewhere in here is a sentence that is correct
+   and still reads wrong to a native speaker. Those are worth a pull request.
 
 Roger that.

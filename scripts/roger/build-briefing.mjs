@@ -85,16 +85,16 @@ for (const task of msgTasks) {
 
 const today = new Date(Date.now() - 3 * 3600 * 1000).toISOString().slice(0, 10);
 const lines = [];
-lines.push(`# Briefing de coleta — ${today}`);
+lines.push(`# Research briefing — ${today}`);
 lines.push('');
-lines.push('Oi! Estou organizando meus follow-ups e preciso que você olhe algumas conversas minhas no LinkedIn enquanto resolvo outras coisas. Pra cada pessoa abaixo:');
+lines.push('Hi! I am organising my follow-ups and I need you to look at a few of my LinkedIn conversations while I deal with other things. For each person below:');
 lines.push('');
-lines.push('1. Busca a pessoa pelo compose/autocomplete de mensagem (NÃO pela busca do inbox, que dá falso negativo).');
-lines.push('2. Me diz: já existe thread comigo? Qual o grau de conexão (1st/2nd/3rd)?');
-lines.push('3. Se existe thread: quem mandou a última mensagem, em que data, e copia o texto das últimas 2-3 mensagens.');
-lines.push('4. Se a pessoa saiu da empresa ou o perfil sumiu, anota isso.');
+lines.push('1. Find the person through the message compose autocomplete (NOT through the inbox search, which gives false negatives).');
+lines.push('2. Tell me: is there already a thread with me? What is the connection degree (1st/2nd/3rd)?');
+lines.push('3. If there is a thread: who sent the last message, on what date, and copy the text of the last 2-3 messages.');
+lines.push('4. If the person left the company or the profile is gone, note that.');
 lines.push('');
-lines.push('No final, me devolve TUDO num bloco só, no formato de saída lá embaixo. Valeu!');
+lines.push('At the end, give me EVERYTHING back in a single block, in the output format below. Thanks!');
 lines.push('');
 lines.push('---');
 lines.push('');
@@ -104,38 +104,38 @@ for (const b of blocks) {
   n++;
   const typeName = TASK_TYPE_NAME[b.task.task_type_id] || '?';
   lines.push(`## ${n}. ${b.lead.name} (lead ${b.lead.id} · task ${b.task.id} · ${typeName})`);
-  if (b.campanha) lines.push(`- ⚠ campanha pré-pronta: "${b.campanha}" (não gerar msg própria)`);
+  if (b.campanha) lines.push(`- ⚠ ready-made campaign: "${b.campanha}" (do not write your own message)`);
   const taskText = (b.task.text || '').replace(/\s+/g, ' ').trim();
-  if (taskText && taskText !== '.') lines.push(`- instrução do card (texto da task): "${taskText}"`);
+  if (taskText && taskText !== '.') lines.push(`- card instruction (the task text): "${taskText}"`);
   for (const c of b.contacts) {
-    lines.push(`- ${c.main ? '★' : '·'} ${c.name} (${c.title}) ${c.linkedin || 'SEM LINKEDIN URL'} [Kommo diz conectado: ${c.connected}]`);
+    lines.push(`- ${c.main ? '★' : '·'} ${c.name} (${c.title}) ${c.linkedin || 'NO LINKEDIN URL'} [CRM says connected: ${c.connected}]`);
   }
-  if (!b.contacts.length) lines.push('- (lead sem contato cadastrado — só anotar)');
+  if (!b.contacts.length) lines.push('- (lead with no contact on file — just note it)');
   lines.push('');
 }
 
 lines.push('---');
 lines.push('');
-lines.push('## Formato de saída (um bloco por pessoa, exatamente assim):');
+lines.push('## Output format (one block per person, exactly like this):');
 lines.push('');
 lines.push('```');
-lines.push('LEAD: <nome do lead> | <lead id> | <task id>');
-lines.push('PESSOA: <nome do contato>');
-lines.push('DEGREE: 1st | 2nd | 3rd | perfil sumiu | saiu da empresa');
-lines.push('THREAD: sim | não');
-lines.push('ULTIMA_MSG_DE: eu | lead | n/a');
-lines.push('ULTIMA_MSG_DATA: YYYY-MM-DD | n/a');
-lines.push('ULTIMAS_MSGS: <texto das últimas 2-3 mensagens, ou n/a>');
-lines.push('OBS: <qualquer coisa fora do padrão>');
+lines.push('LEAD: <lead name> | <lead id> | <task id>');
+lines.push('PERSON: <contact name>');
+lines.push('DEGREE: 1st | 2nd | 3rd | profile gone | left the company');
+lines.push('THREAD: yes | no');
+lines.push('LAST_MSG_FROM: me | them | n/a');
+lines.push('LAST_MSG_DATE: YYYY-MM-DD | n/a');
+lines.push('LAST_MSGS: <text of the last 2-3 messages, or n/a>');
+lines.push('NOTES: <anything out of the ordinary>');
 lines.push('```');
 lines.push('');
 
 const outPath = join(ROOT, `briefing-cowork-${today}.md`);
 writeFileSync(outPath, lines.join('\n'));
 
-console.log(`✓ briefing salvo: ${outPath}`);
-console.log(`  ${blocks.length} leads de mensagem incluídos (de ${msgTasks.length} tasks de msg até o cutoff)`);
-console.log('\nPanorama de TODAS as tasks até o cutoff (visibilidade, nada ignorado em silêncio):');
+console.log(`✓ briefing saved: ${outPath}`);
+console.log(`  ${blocks.length} message leads included (out of ${msgTasks.length} message tasks up to the cutoff)`);
+console.log('\nEvery task up to the cutoff (full visibility, nothing ignored in silence):');
 for (const [name, count] of Object.entries(byType).sort((a, b) => b[1] - a[1])) {
   console.log(`  ${String(count).padStart(4)} × ${name}`);
 }

@@ -32,8 +32,8 @@ it is the markdown cell separator. Matching ignores case.
 
 | key | match | reframe |
 | --- | --- | --- |
-| has-tool | already have;;we use;;já usamos;;we're on | Do not argue with the tool they picked. Ask what still gets done by hand around it — that is where the conversation is. |
-| build-it | build (it )?in.?house;;our own;;nosso próprio | Building is fine. Ask who maintains it when the person who wrote it changes teams. |
+| has-tool | already have;;we use;;we are on | Do not argue with the tool they picked. Ask what still gets done by hand around it — that is where the conversation is. |
+| build-it | build (it )?in.?house;;our own;;in house | Building is fine. Ask who maintains it when the person who wrote it changes teams. |
 | price-early | \b(price;;pricing;;cost;;how much;;quanto custa)\b | Anchor on the hours of month close before the number. Do not quote before they have said what it costs them today. |
 | send-proposal | send (me )?(a )?proposal;;just send;;manda (a )?proposta | A proposal with no context is generic. One short conversation first, then something tailored. |
 | think-about-it | think about it;;get back to you;;vou pensar | With no concrete next step this goes cold in a week. Offer a specific one, with a date. |

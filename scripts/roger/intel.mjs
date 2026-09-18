@@ -124,7 +124,7 @@ export function detectSignals(collected, lead = {}) {
   // founder with no active LinkedIn: weakly objective. We only mark it when the scrape did
   // NOT find a company LinkedIn AND there is none in the funding data. (The qualitative
   if (!s.linkedinCompany && !f.linkedin) {
-    gap.founderInvisible = undefined; // não afirmamos; vira needsJudgment
+    gap.founderInvisible = undefined; // we do not affirm it; it becomes needsJudgment
   }
 
   // amateur branding: NOT reliably inferable by code → needsJudgment.
@@ -132,8 +132,8 @@ export function detectSignals(collected, lead = {}) {
   // The SUBJECTIVE signals we NEVER infer (they enter the report as needsJudgment):
   // What we never infer by code goes to human judgment, named.
   const needsJudgment = [
-    'noRecentActivity (quieto em público — precisa de olho humano no perfil)',
-    'founderInvisible (o dono do problema não aparece)',
+    'noRecentActivity (quiet in public — needs a human eye on the profile)',
+    'founderInvisible (the owner of the problem does not show up)',
     'inconsistentStory (o que o site diz versus o que a pessoa diz)',
     'genericMessaging (a mensagem deles não diz nada de específico)',
   ];

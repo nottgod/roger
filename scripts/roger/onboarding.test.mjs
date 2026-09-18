@@ -1,8 +1,8 @@
 // Testes do onboarding — o contrato entre a ENTREVISTA e o resto do motor.
 //
-// O risco que estes testes cobrem: a entrevista gerar arquivos bonitos que nenhum
-// carregador entende. Se o icp.md que sai da tela 4 não parseia no score.mjs, ou se o
-// voice.json da tela 3 não muda o veredito do lint, as telas são decorativas.
+// The risk these tests cover: the interview writing pretty files that no loader understands.
+// If the icp.md coming out of screen 4 does not parse in score.mjs, or the voice.json from
+// screen 3 does not change the lint verdict, then the screens are decorative.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,8 +13,8 @@ import { resolveVoice } from './lib/voice.mjs';
 import { lintMessage } from './lint-voz.mjs';
 import { readLeads, TEMPLATE_CSV } from './lib/leads-file.mjs';
 
-// Uma pessoa qualquer: vende software de reconciliação para fintechs,
-// escreve solto, sem travessão, mensagem curta.
+// Just some person: sells reconciliation software to fintechs, writes loosely, no em
+// dashes, short messages.
 const ANSWERS = {
   grammar: 'human',
   register: 'oral',
@@ -42,21 +42,21 @@ const ANSWERS = {
   leadSource: 'spreadsheet',
 };
 
-// ─── tela 4: o icp.md gerado é lido pelo score.mjs ───────────────────────────
-test('o icp.md que a entrevista gera parseia inteiro, sem tabela faltando', () => {
+// ─── screen 4: the generated icp.md is read by score.mjs ─────────────────────
+test('the icp.md the interview writes parses whole, with no table missing', () => {
   const icp = loadIcp({ text: renderIcp(ANSWERS) });
   assert.deepEqual(icp.missing, [], `faltando: ${icp.missing.join(', ')}`);
   assert.equal(icp.source, 'inline');
 });
 
-test('os números da entrevista chegam nos gates', () => {
+test('the numbers from the interview reach the gates', () => {
   const icp = loadIcp({ text: renderIcp(ANSWERS) });
   assert.equal(icp.numbers.headcount_min, 20);
   assert.equal(icp.numbers.headcount_max, 400);
   assert.equal(icp.numbers.budget_floor_usd_month, 1500);
 });
 
-test('geografia aceita e descartada saem da resposta, com apelido', () => {
+test('accepted and rejected geographies come out of the answer, with aliases', () => {
   const icp = loadIcp({ text: renderIcp(ANSWERS) });
   assert.ok(icp.geoAccept.has('united states'));
   assert.ok(icp.geoAccept.has('united-states'), 'o slug também casa');
@@ -64,7 +64,7 @@ test('geografia aceita e descartada saem da resposta, com apelido', () => {
   assert.ok(icp.geoDiscard.has('russia'));
 });
 
-test('segmentos e passes automáticos viram tabela', () => {
+test('segments and automatic passes become tables', () => {
   const icp = loadIcp({ text: renderIcp(ANSWERS) });
   assert.equal(icp.segments.get('payments').cluster, 'payments');
   assert.equal(icp.segments.get('neobanks').approach, 'Contextual');
@@ -72,7 +72,7 @@ test('segmentos e passes automáticos viram tabela', () => {
   assert.ok(icp.nonIcp.has('consumer-apps'));
 });
 
-test('o ICP da entrevista decide de verdade: passa, descarta por tamanho e por país', () => {
+test('the interview ICP really decides: it passes, and discards by size and by country', () => {
   const icp = loadIcp({ text: renderIcp(ANSWERS) });
   const base = { b2b2: true, web2Firm: true, decisorAcessivel: true, segment: 'payments', budgetProvavel: 3000 };
 
@@ -93,9 +93,9 @@ test('o ICP da entrevista decide de verdade: passa, descarta por tamanho e por p
   assert.match(semBudget.reason, /budget/);
 });
 
-test('entrevista respondida no vazio ainda gera um icp.md válido', () => {
-  // O caso "apertei enter em tudo". O arquivo tem que nascer parseável mesmo assim,
-  // senão o primeiro contato da pessoa é um erro de parse.
+test('an interview answered with blanks still writes a valid icp.md', () => {
+  // The "I hit enter on everything" case. The file still has to come out parseable,
+  // otherwise the person's first contact with Roger is a parse error.
   const icp = loadIcp({ text: renderIcp({}) });
   assert.deepEqual(icp.missing, []);
   assert.equal(icp.numbers.headcount_min, 1);
@@ -107,7 +107,7 @@ test('entrevista respondida no vazio ainda gera um icp.md válido', () => {
 });
 
 // ─── tela 3: o voice.json gerado muda o veredito do lint ─────────────────────
-test('a voz da entrevista reprova o que ela disse que não usa', () => {
+test('the interview voice fails what the person said they never use', () => {
   const voice = resolveVoice(toVoiceConfig(ANSWERS));
   const comTravessao = lintMessage('saw the launch — how is the rollout going?', { stage: 'FUP_2', voice });
   assert.ok(comTravessao.errors.some((e) => /em.dash/.test(e)));
@@ -116,9 +116,9 @@ test('a voz da entrevista reprova o que ela disse que não usa', () => {
   assert.deepEqual(semTravessao.errors, []);
 });
 
-test('o teto de tamanho depende do CANAL, não só do "curta/média/longa"', () => {
-  // A mesma resposta "curta" significa coisas diferentes: uma DM curta é bem menor
-  // que um e-mail curto. Antes os dois davam 420 e a Roger liberava DM gigante.
+test('the length cap depends on the CHANNEL, not only on short/medium/long', () => {
+  // The same answer "short" means different things: a short DM is much smaller than a
+  // short email. Before, both gave 420 and Roger allowed a giant DM.
   const noLinkedin = resolveVoice(toVoiceConfig({ ...ANSWERS, channels: 'linkedin' }));
   const noEmail = resolveVoice(toVoiceConfig({ ...ANSWERS, channels: 'email' }));
   assert.equal(noLinkedin.caps.default, 300);
@@ -131,7 +131,7 @@ test('o teto de tamanho depende do CANAL, não só do "curta/média/longa"', () 
   assert.deepEqual(noMail.errors, [], 'no e-mail, os mesmos 500 chars passam');
 });
 
-test('resposta negativa na assinatura não vira assinatura', () => {
+test('a negative answer to the sign-off does not become a sign-off', () => {
   for (const resposta of ['no', 'não', 'nope', 'none', '-', '']) {
     const cfg = toVoiceConfig({ ...ANSWERS, signoff: resposta });
     assert.equal(cfg.signoff, null, `"${resposta}" deveria virar null`);
@@ -139,7 +139,7 @@ test('resposta negativa na assinatura não vira assinatura', () => {
   assert.equal(toVoiceConfig({ ...ANSWERS, signoff: 'Best, Sam' }).signoff, 'Best, Sam');
 });
 
-test('gramática impecável liga a regra que a gramática humana desliga', () => {
+test('impeccable grammar turns on the rule that human grammar turns off', () => {
   const solta = toVoiceConfig({ ...ANSWERS, grammar: 'human' });
   const limpa = toVoiceConfig({ ...ANSWERS, grammar: 'impeccable' });
   assert.equal(solta.allowHumanSlip, true);
@@ -148,22 +148,22 @@ test('gramática impecável liga a regra que a gramática humana desliga', () =>
   assert.equal(limpa.requireCleanGrammar, true);
 });
 
-test('as palavras que a pessoa não diz chegam ao lint como banidas', () => {
+test('the words the person never says reach the lint as banned', () => {
   const voice = resolveVoice(toVoiceConfig(ANSWERS));
   const r = lintMessage('quick thought on synergy here', { stage: 'FUP_1', voice });
   assert.ok(r.errors.some((e) => /synergy/.test(e)));
 });
 
-test('a voz da entrevista NÃO herda o gosto de nenhum outro operador', () => {
-  // Regressão: "Hey" e a palavra "leads" já foram proibidas para todo mundo porque
-  // eram a regra de uma pessoa só. Quem não pediu isso não deve levar.
+test('the interview voice does NOT inherit the taste of any other operator', () => {
+  // Regression: "Hey" and the word "leads" were once banned for everybody because they
+  // were one person's rule. Whoever did not ask for that should not inherit it.
   const voice = resolveVoice(toVoiceConfig(ANSWERS));
   const r = lintMessage('Hey Ana, quick question about your inbound leads', { stage: 'FUP_1', voice });
   assert.deepEqual(r.errors, []);
 });
 
 // ─── a persona ────────────────────────────────────────────────────────────────
-test('a persona guarda a amostra real e a história, que é a parte que ninguém copia', () => {
+test('the persona keeps the real sample and the story, which is the part nobody copies', () => {
   const md = renderPersona(ANSWERS, toVoiceConfig(ANSWERS));
   assert.match(md, /# Operator — sam/);
   assert.match(md, /saw you shipped the audit/);
@@ -173,7 +173,7 @@ test('a persona guarda a amostra real e a história, que é a parte que ninguém
 });
 
 // ─── tela 5 ───────────────────────────────────────────────────────────────────
-test('o modelo de planilha que a tela 5 mostra é o mesmo que o leitor aceita', () => {
+test('the spreadsheet template screen 5 shows is the same one the reader accepts', () => {
   const r = readLeads({ text: TEMPLATE_CSV });
   assert.deepEqual(r.errors, []);
   assert.ok(r.leads.length >= 2);

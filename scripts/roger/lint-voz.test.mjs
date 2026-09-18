@@ -27,8 +27,8 @@ const codes = (findings) => findings.map((f) => f.code);
 
 // ─── O TESTE QUE JUSTIFICA O BLOCO B ─────────────────────────────────────────
 // Mesma mensagem, duas vozes opostas, vereditos opostos. Se isto passa, a voz
-// deixou de ser constante de código e virou dado de quem assina.
-test('a MESMA mensagem passa numa voz e falha na outra', () => {
+// stopped being a constant in the code and became data belonging to whoever signs.
+test('the SAME message passes in one voice and fails in another', () => {
   const msg = 'saw the audit you shipped — sharp move. how are you handling the reruns?';
 
   const semTravessao = resolveVoice({ banEmDash: true });
@@ -42,7 +42,7 @@ test('a MESMA mensagem passa numa voz e falha na outra', () => {
   assert.equal(b.errors.length, 0, 'quem usa travessão tem que aprovar a mesma mensagem');
 });
 
-test('vozes opostas divergem também em saudação, emoji e exclamação', () => {
+test('opposite voices also diverge on greetings, emoji and exclamation marks', () => {
   const msg = 'Hey Ana! quick thought on the launch 🙂';
   const dura = resolveVoice({ banFormalGreeting: true, banEmoji: true, banExclamation: true });
   const solta = resolveVoice({});
@@ -54,35 +54,35 @@ test('vozes opostas divergem também em saudação, emoji e exclamação', () =>
   assert.equal(b.errors.length, 0);
 });
 
-// ─── universal: vale para qualquer voz, inclusive a neutra ───────────────────
-test('placeholder não substituído reprova até na voz neutra', () => {
+// ─── universal: true for any voice, including the neutral one ────────────────
+test('an unreplaced placeholder fails even in the neutral voice', () => {
   const r = lintMessage('hi [firstname], quick one', { stage: 'FUP_1', voice: NEUTRAL });
   assert.ok(codes(r.findings).includes('placeholder'));
 });
 
-test('markdown, pipe, blockquote e bullet reprovam na voz neutra', () => {
+test('markdown, pipes, blockquotes and bullets fail in the neutral voice', () => {
   assert.ok(codes(checkMarkdownLeak('**bold** leaking')).includes('markdown'));
   assert.ok(codes(checkMarkdownLeak('a | b')).includes('pipe'));
   assert.ok(codes(checkMarkdownLeak('> quoted')).includes('blockquote'));
   assert.ok(codes(checkMarkdownLeak('- item')).includes('bullets'));
 });
 
-test('corporativês morto reprova na voz neutra', () => {
+test('dead corporate speak fails in the neutral voice', () => {
   const r = lintMessage('I hope this finds you well, just checking in', { stage: 'FUP_2', voice: NEUTRAL });
   assert.ok(r.errors.length >= 2);
   assert.ok(codes(r.findings).every((c) => c === 'dead-corporate' || c === 'short'));
 });
 
-test('mais de uma pergunta reprova, e o limite é configurável', () => {
+test('more than one question fails, and the limit is configurable', () => {
   const msg = 'why now? and who owns it?';
   assert.equal(checkQuestionCount(msg, NEUTRAL).length, 1);
   assert.equal(checkQuestionCount(msg, resolveVoice({ maxQuestions: 2 })).length, 0);
-  // `false` desliga; `null` significa "não declarei" e mantém o padrão de 1.
+  // `false` turns it off; `null` means "I never declared it" and keeps the default of 1.
   assert.equal(checkQuestionCount(msg, resolveVoice({ maxQuestions: false })).length, 0);
   assert.equal(checkQuestionCount(msg, resolveVoice({ maxQuestions: null })).length, 1);
 });
 
-test('cap de tamanho usa o valor da voz e distingue connection', () => {
+test('the length cap uses the voice value and tells a connection request apart', () => {
   const longa = 'x'.repeat(700);
   assert.ok(codes(checkLength(longa, NEUTRAL, { isConnection: false })).includes('too-long'));
   const curta = 'x'.repeat(350);
@@ -91,7 +91,7 @@ test('cap de tamanho usa o valor da voz e distingue connection', () => {
 });
 
 // ─── checks da pessoa, isolados ───────────────────────────────────────────────
-test('cada check de gosto é no-op quando a voz não pede', () => {
+test('every taste check is a no-op when the voice does not ask for it', () => {
   const msg = 'Hey! isto tem — travessão, emoji 🙂 e a palavra leads. 14M impressions. Best, Sam';
   const flags = { stage: 'FUP_1', isFirstTouch: false, isConnection: false, isConversation: false, isFup: true };
   assert.deepEqual(checkDashes(msg, NEUTRAL), []);
@@ -104,20 +104,20 @@ test('cada check de gosto é no-op quando a voz não pede', () => {
   assert.deepEqual(checkCallCta(msg, NEUTRAL, flags), []);
 });
 
-test('palavra banida casa palavra inteira, não pedaço', () => {
+test('a banned word matches the whole word, not a fragment', () => {
   const voice = resolveVoice({ bannedWords: ['lift'] });
   assert.equal(checkBannedList('a big lift here', voice).length, 1);
   assert.equal(checkBannedList('we are lifting weights', voice).length, 0);
 });
 
-test('assinatura só é barrada nos stages fora da lista permitida', () => {
+test('a sign-off is only blocked at stages outside the allowed list', () => {
   const voice = resolveVoice({ signoff: 'Best, Sam', signoffAllowedStages: ['inicial'] });
   assert.equal(checkSignoff('tudo certo. Best, Sam', voice, { stage: 'FUP_3' }).length, 1);
   assert.equal(checkSignoff('tudo certo. Best, Sam', voice, { stage: 'MENSAGEM_INICIAL' }).length, 0);
   assert.equal(checkSignoff('sem assinatura aqui', voice, { stage: 'FUP_3' }).length, 0);
 });
 
-test('CTA de call: proibido onde a voz proíbe, avisado onde a voz espera', () => {
+test('the call CTA: forbidden where the voice forbids, warned where the voice expects it', () => {
   const voice = resolveVoice({
     callCta: { bannedIn: ['connection'], warnIfMissingIn: ['inicial'], minCharsForWarn: 10 },
   });
@@ -128,8 +128,8 @@ test('CTA de call: proibido onde a voz proíbe, avisado onde a voz espera', () =
   assert.ok(codes(checkCallCta(semPedir, voice, { stage: 'MENSAGEM_INICIAL' })).includes('no-call-cta'));
 });
 
-// ─── a voz declarada do operador: a regressão do comportamento antigo ────────
-test('a voz do operador reprova o que uma voz declarada tem que reprovar', () => {
+// ─── the declared operator voice: the regression of the old behaviour ────────
+test('the operator voice fails what a declared voice has to fail', () => {
   const { voice, source } = loadVoice('example');
   assert.equal(source, 'file', 'rapport/operators/example/voice.json tem que existir');
 
@@ -146,7 +146,7 @@ test('a voz do operador reprova o que uma voz declarada tem que reprovar', () =>
 });
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
-test('fixture pass passa na voz do operador', () => {
+test('the passing fixture passes in the operator voice', () => {
   const { voice } = loadVoice('example');
   for (const lead of fixture('pass.json').leads) {
     const { errors } = lintMessage(lead.msg, { stage: lead.stage, voice });
@@ -154,7 +154,7 @@ test('fixture pass passa na voz do operador', () => {
   }
 });
 
-test('fixture fail falha na voz do operador', () => {
+test('the failing fixture fails in the operator voice', () => {
   const { voice } = loadVoice('example');
   for (const lead of fixture('fail.json').leads) {
     const { errors } = lintMessage(lead.msg, { stage: lead.stage, voice });
@@ -162,7 +162,7 @@ test('fixture fail falha na voz do operador', () => {
   }
 });
 
-test('fixtures de conversation seguem o mesmo veredito', () => {
+test('the conversation fixtures get the same verdict', () => {
   const { voice } = loadVoice('example');
   for (const lead of fixture('conversation-pass.json').leads) {
     const { errors } = lintMessage(lead.msg, { stage: lead.stage, voice });
@@ -174,8 +174,8 @@ test('fixtures de conversation seguem o mesmo veredito', () => {
   }
 });
 
-test('as fixtures só usam empresas fictícias declaradas aqui', () => {
-  // Garantia pela positiva: em vez de listar nomes reais proibidos (que os traria para
+test('the fixtures only use fictional companies declared here', () => {
+  // Proving it the positive way: instead of listing real forbidden names (which would bring
   // dentro deste arquivo), toda empresa citada nas fixtures tem de estar nesta lista.
   const ficticias = new Set(['AcmeRWA', 'MidInfra', 'BadCo', 'FupSign', 'NorthPay', 'KapitalFO', 'AgencyTrap']);
   for (const f of ['pass.json', 'fail.json', 'conversation-pass.json', 'conversation-fail.json']) {
@@ -186,7 +186,7 @@ test('as fixtures só usam empresas fictícias declaradas aqui', () => {
 });
 
 // ─── anti-blast ───────────────────────────────────────────────────────────────
-test('duas mensagens quase iguais no lote são pegas', () => {
+test('two nearly identical messages in a batch are caught', () => {
   const items = [
     { n: 1, co: 'A', msg: 'saw the launch last week, how are you handling the rollout?' },
     { n: 2, co: 'B', msg: 'saw the launch last week, how are you handling the rollout!' },
@@ -197,7 +197,7 @@ test('duas mensagens quase iguais no lote são pegas', () => {
   assert.match(issues[0], /#1 \(A\) e #2 \(B\)/);
 });
 
-test('threshold do anti-blast é configurável', () => {
+test('the anti-blast threshold is configurable', () => {
   const items = [
     { n: 1, co: 'A', msg: 'aaaaaaaaaabbbbb' },
     { n: 2, co: 'B', msg: 'aaaaaaaaaaccccc' },
@@ -207,14 +207,14 @@ test('threshold do anti-blast é configurável', () => {
 });
 
 // ─── carregamento da voz ──────────────────────────────────────────────────────
-test('operador sem arquivo cai no neutro e diz de onde veio', () => {
+test('an operator with no file falls back to neutral and says where that came from', () => {
   const r = loadVoice('ninguem-com-esse-nome');
   assert.equal(r.source, 'defaults');
   assert.equal(r.error, null);
   assert.deepEqual(r.voice.bannedWords, []);
 });
 
-test('voice.json quebrado não passa em silêncio', () => {
+test('a broken voice.json does not pass in silence', () => {
   const dir = mkdtempSync(join(tmpdir(), 'roger-voice-bad-'));
   const p = join(dir, 'voice.json');
   writeFileSync(p, '{ isto não é json');
@@ -223,7 +223,7 @@ test('voice.json quebrado não passa em silêncio', () => {
   assert.match(r.error, /voice\.json inválido/);
 });
 
-test('resolveVoice preenche o que falta e respeita o que veio', () => {
+test('resolveVoice fills in what is missing and respects what came in', () => {
   const v = resolveVoice({ banEmDash: true, caps: { connection: 200 } });
   assert.equal(v.banEmDash, true);
   assert.equal(v.caps.connection, 200);
@@ -231,12 +231,12 @@ test('resolveVoice preenche o que falta e respeita o que veio', () => {
   assert.equal(v.banEmoji, false);
 });
 
-test('maxChars da entrevista virou o cap default', () => {
+test('maxChars from the interview became the default cap', () => {
   const v = resolveVoice({ maxChars: 420 });
   assert.equal(v.caps.default, 420);
 });
 
-test('voz lida de arquivo pelo caminho injetado', () => {
+test('the voice is read from a file at the injected path', () => {
   const p = voiceFile({ banEmDash: true, bannedWords: ['synergy'] });
   const r = loadVoice('seja-quem-for', { path: p });
   assert.equal(r.source, 'file');

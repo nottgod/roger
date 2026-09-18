@@ -41,7 +41,7 @@ import { TOKENS, BRAND_BAR } from './lib/theme.mjs';
 
 const DRY = process.env.DRY === '1';
 const PORT = parseInt(process.env.PORT || '4242', 10);
-const HOST = '127.0.0.1'; // NUNCA 0.0.0.0: isto serve leads e textos, sem autenticação
+const HOST = '127.0.0.1'; // NEVER 0.0.0.0: this serves leads and drafts, with no authentication
 const MAX_BODY = 256 * 1024;
 
 const batchFile = process.argv[2];
@@ -368,7 +368,7 @@ fetch('/state').then(r=>r.json()).then(s=>{state=s;render();});
 
 function originOk(req) {
   const origin = req.headers.origin;
-  if (!origin) return true; // curl e afins: sem Origin não há risco de página de terceiro
+  if (!origin) return true; // curl and friends: with no Origin there is no third-party page risk
   return origin === `http://${HOST}:${PORT}` || origin === `http://localhost:${PORT}`;
 }
 
@@ -395,19 +395,19 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/action') {
-    if (!originOk(req)) return send(403, { error: 'origem não permitida' });
+    if (!originOk(req)) return send(403, { error: 'origin not allowed' });
 
     let body;
     try {
       body = await readBody(req);
     } catch (e) {
       // A malformed JSON used to take the process down in the middle of a batch.
-      return send(400, { error: `corpo inválido: ${e.message}` });
+      return send(400, { error: `invalid body: ${e.message}` });
     }
 
     const { n, action, text, reason, force } = body || {};
     const item = batch.leads.find((l) => l.n === n);
-    if (!item) return send(404, { error: 'item não encontrado' });
+    if (!item) return send(404, { error: 'item not found' });
 
     // 1. the transition is decided by the pure core (which is what blocks a send with no approval)
     const t = applyAction(state, item, action, { text, reason, force });

@@ -1,5 +1,5 @@
 // intel.test.mjs — testes da camada Intelligence (Roger v5, F2).
-// REGRA: zero rede. As 3 APIs são mockadas via injeção de `deps` em collectIntel/runIntel.
+// RULE: zero network. The 3 APIs are mocked by injecting `deps` into collectIntel/runIntel.
 // Rodar: node --test scripts/roger/intel.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import { runIntel, detectSignals, collectIntel } from './intel.mjs';
 const KEYS = { exaKey: 'fake', fundableKey: 'fake', firecrawlKey: 'fake' };
 const recentISO = new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(); // ~2 meses atrás
 
-// fábrica de deps mockadas
+// a factory of mocked deps
 function mockDeps(over = {}) {
   return {
     fundableLookup: async () => over.fundable ?? null,
@@ -19,7 +19,7 @@ function mockDeps(over = {}) {
   };
 }
 
-test('(a) funding recente + blog → timing forte, classify QUENTE', async () => {
+test('(a) recent funding + a blog → strong timing, classify HOT', async () => {
   const lead = {
     name: 'Jane', company: 'NorthPay',
     b2b2: true, web2Firm: true, geo: 'USA', decisorAcessivel: true,
@@ -37,7 +37,7 @@ test('(a) funding recente + blog → timing forte, classify QUENTE', async () =>
   assert.equal(r.sources.fundable, 'ok');
 });
 
-test('(b) fora do ICP → DESCARTE via score.mjs gate', async () => {
+test('(b) out of the ICP → DISCARD through the score.mjs gate', async () => {
   const lead = {
     name: 'Bob', company: 'BigBank',
     b2b2: false, web2Firm: true, geo: 'USA', decisorAcessivel: true,
@@ -49,7 +49,7 @@ test('(b) fora do ICP → DESCARTE via score.mjs gate', async () => {
   assert.match(r.reason, /not our market/);
 });
 
-test('(c) coleta falha (APIs retornam null) → report degrada sem crashar', async () => {
+test('(c) collection fails (the APIs return null) → the report degrades without crashing', async () => {
   const lead = {
     name: 'Carol', company: 'GhostCo',
     b2b2: true, web2Firm: true, geo: 'UK', decisorAcessivel: true,
@@ -57,20 +57,20 @@ test('(c) coleta falha (APIs retornam null) → report degrada sem crashar', asy
   };
   const deps = mockDeps({ fundable: null, website: null, scraped: {}, painPoint: null });
   const r = await runIntel(lead, KEYS, deps);
-  // não deve lançar; sources marcam falha/skip
+  // it must not throw; the sources mark failure or skip
   assert.equal(r.sources.fundable, 'fail');
   assert.equal(r.sources.firecrawl, 'skip'); // sem website, não chega no Firecrawl
   assert.equal(r.sources.exa, 'fail');
   assert.ok(['QUENTE', 'MORNO', 'FRIO'].includes(r.tier)); // ICP ok via lead → não DESCARTE
 });
 
-test('detectSignals: sem dados não inventa sinais objetivos', () => {
+test('detectSignals: with no data it invents no objective signals', () => {
   const r = detectSignals({ fundable: {}, scraped: {}, sources: { firecrawl: 'skip' }, painPoint: null });
   assert.equal(Object.keys(r.timing).length, 0);
   assert.equal(r.needsJudgment.length, 4);
 });
 
-test('collectIntel: lead sem company retorna shape vazio sem chamar coletores', async () => {
+test('collectIntel: a lead with no company returns an empty shape without calling collectors', async () => {
   let called = false;
   const deps = mockDeps({ fns: { fundableLookup: async () => { called = true; return null; } } });
   const out = await collectIntel({}, KEYS, deps);

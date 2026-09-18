@@ -1,7 +1,7 @@
-// Testes do braço de envio — a orquestração inteira, com um navegador FALSO.
+// Tests for the sending arm — the whole orchestration, against a FAKE browser.
 //
-// É isto que permite provar o fluxo perigoso (teto, journal, recusas, pausa,
-// disjuntor, confirmação) sem abrir navegador e sem tocar em conta de LinkedIn.
+// That is what makes it possible to prove the dangerous flow (the cap, the journal, the
+// refusals, the pause, the breaker, the confirmation) without opening a browser or
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,7 +23,7 @@ const QUEUE = {
   ],
 };
 
-// Navegador falso: devolve o retrato que o teste quiser e registra o que foi digitado.
+// A fake browser: it returns whatever snapshot the test wants and records what was typed.
 function fakeBrowser(snapshots, sendResults = {}) {
   const typed = [];
   let i = 0;

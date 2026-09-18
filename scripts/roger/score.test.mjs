@@ -1,6 +1,6 @@
-// Testes de score.mjs contra o pacote de EXEMPLO (rapport/contexts/example), que é fictício:
-// software de reconciliação para times de finanças. Troque o contexto pelo seu e troque
-// estes números e slugs junto.
+// Tests for score.mjs against the EXAMPLE pack (rapport/contexts/example), which is
+// fictional: reconciliation software for finance teams. Swap the context for your own and
+// swap these numbers and slugs with it.
 //
 // Nota sobre `web2Firm: true`: o gate de estágio é herança do primeiro contexto que a Roger
 // atendeu. Para um contexto qualquer ele não faz sentido, e está anotado como dívida.
@@ -14,65 +14,65 @@ const base = {
   headcount: 80, geo: 'Germany', budgetProvavel: 3000, segment: 'payments',
 };
 
-test('classify: lead que passa quente (gap material + timing)', () => {
+test('classify: a lead that comes out hot (material gap + timing)', () => {
   const r = classify({ ...base, company: 'NorthPay', noRecentActivity: true, genericMessaging: true, recentFunding: true });
   assert.equal(r.tier, 'QUENTE');
   assert.equal(r.abordagem, 'Case');
   assert.match(r.casoParecido, /Payment/);
 });
 
-test('classify: DESCARTE por não-ICP', () => {
+test('classify: DISCARD for being out of market', () => {
   const r = classify({ ...base, company: 'BigBank', nonIcpFlags: ['enterprise-bank'] });
   assert.equal(r.tier, 'DESCARTE');
   assert.match(r.reason, /not our market/);
 });
 
-test('classify: DESCARTE por empresa grande demais', () => {
+test('classify: DISCARD for a company too big', () => {
   const r = classify({ ...base, company: 'HugeCo', headcount: 4000 });
   assert.equal(r.tier, 'DESCARTE');
   assert.match(r.reason, /headcount/);
 });
 
-test('classify: DESCARTE por empresa pequena demais', () => {
+test('classify: DISCARD for a company too small', () => {
   const r = classify({ ...base, company: 'TinyCo', headcount: 4 });
   assert.equal(r.tier, 'DESCARTE');
   assert.match(r.reason, /headcount/);
 });
 
-test('classify: 1 sinal de timing já é forte neste ICP', () => {
+test('classify: one timing signal is already strong in this ICP', () => {
   const r = classify({ ...base, company: 'MidMarket', segment: 'marketplaces', recentFunding: true });
   assert.equal(r.tier, 'QUENTE');
   assert.equal(r.abordagem, 'Contextual');
 });
 
-test('classify: FRIO quando não há sinal nenhum', () => {
+test('classify: COLD when there is no signal at all', () => {
   assert.equal(classify({ ...base, company: 'QuietCo' }).tier, 'FRIO');
 });
 
-test('icpGate: budget abaixo do piso descarta', () => {
+test('icpGate: a budget below the floor discards', () => {
   const r = icpGate({ ...base, budgetProvavel: 500 });
   assert.equal(r.pass, false);
   assert.match(r.reason, /budget/);
 });
 
-test('icpGate: geografia fora da tabela descarta', () => {
+test('icpGate: a geography outside the table discards', () => {
   const r = icpGate({ ...base, geo: 'Antarctica' });
   assert.equal(r.pass, false);
   assert.match(r.reason, /geography/);
 });
 
-test('gapSignature: 2 sinais = material neste ICP', () => {
+test('gapSignature: 2 signals = material in this ICP', () => {
   const r = gapSignature({ noRecentActivity: true, genericMessaging: true });
   assert.equal(r.count, 2);
   assert.equal(r.material, true);
 });
 
-test('timingSignals: 1 sinal = forte neste ICP', () => {
+test('timingSignals: 1 signal = strong in this ICP', () => {
   const r = timingSignals({ hiringForTheProblem: true });
   assert.equal(r.forte, true);
 });
 
-test('sinal que não está na tabela do pacote não conta', () => {
+test('a signal that is not in the pack table does not count', () => {
   assert.deepEqual(gapSignature({ inventedSignal: true, noRecentActivity: true }).signals, ['noRecentActivity']);
 });
 
@@ -119,7 +119,7 @@ const OUTRO_ICP = `
 | semVitrine | Sem vitrine |
 `;
 
-test('o MESMO lead é ICP num pacote e DESCARTE no outro', () => {
+test('the SAME lead is in market in one pack and DISCARD in another', () => {
   const lead = { ...base, company: 'NorthPay' };
   assert.notEqual(classify(lead).tier, 'DESCARTE');
   const r = classify(lead, loadIcp({ text: OUTRO_ICP }));
@@ -127,7 +127,7 @@ test('o MESMO lead é ICP num pacote e DESCARTE no outro', () => {
   assert.match(r.reason, /headcount|geografia/);
 });
 
-test('um pacote estrangeiro usa os próprios segmentos, números e sinais', () => {
+test('a foreign pack uses its own segments, numbers and signals', () => {
   const icp = loadIcp({ text: OUTRO_ICP });
   const r = classify({
     b2b2: true, web2Firm: true, decisorAcessivel: true,
@@ -139,7 +139,7 @@ test('um pacote estrangeiro usa os próprios segmentos, números e sinais', () =
   assert.match(r.reason, /gap 1\/1 · timing 0\/1/);
 });
 
-test('alias de geografia casa em qualquer idioma declarado', () => {
+test('a geography alias matches in any declared language', () => {
   const icp = loadIcp({ text: OUTRO_ICP });
   const b = { b2b2: true, web2Firm: true, decisorAcessivel: true, headcount: 6, budgetProvavel: 300 };
   assert.equal(icpGate({ ...b, geo: 'brasil' }, icp).pass, true);
@@ -147,7 +147,7 @@ test('alias de geografia casa em qualquer idioma declarado', () => {
   assert.equal(icpGate({ ...b, geo: 'alemanha' }, icp).pass, false);
 });
 
-test('icp.md sem tabelas cai no fallback e DIZ o que faltou', () => {
+test('an icp.md with no tables falls back and SAYS what was missing', () => {
   const icp = loadIcp({ text: '# só prosa, nenhuma tabela de máquina' });
   assert.equal(icp.source, 'fallback');
   assert.equal(icp.missing.length, 6);
@@ -157,30 +157,30 @@ test('icp.md sem tabelas cai no fallback e DIZ o que faltou', () => {
   assert.equal(icp.nonIcp.size, 0);
 });
 
-test('sem tabela de geografia, nada é recusado por geografia', () => {
+test('with no geography table, nothing is refused on geography', () => {
   const icp = loadIcp({ text: '# nada' });
   const r = icpGate({ b2b2: true, web2Firm: true, decisorAcessivel: true, headcount: 10, geo: 'Qualquer Lugar' }, icp);
   assert.equal(r.pass, true, 'recusar em silêncio seria pior que aceitar');
 });
 
-test('pacote pela metade é marcado como parcial, com a lista do que falta', () => {
+test('a half-finished pack is marked partial, with the list of what is missing', () => {
   const icp = loadIcp({ text: OUTRO_ICP.replace(/## 3\.4\.M[\s\S]*?(?=## 3\.6\.M)/, '') });
   assert.match(icp.source, /parcial/);
   assert.deepEqual(icp.missing, ['3.4.M geografia']);
 });
 
-test('número inválido no icp.md não derruba: volta ao default', () => {
+test('an invalid number in icp.md does not break it: it falls back to the default', () => {
   const icp = loadIcp({ text: '## 3.2.M.\n\n| key | value |\n| --- | --- |\n| headcount_min | muitos |\n' });
   assert.equal(icp.numbers.headcount_min, 1);
 });
 
-test('o icp.md do pacote ativo tem as seis tabelas de máquina', () => {
+test('the icp.md of the active pack has all six machine tables', () => {
   const icp = loadIcp({ noCache: true });
   assert.deepEqual(icp.missing, [], `faltando: ${icp.missing.join(', ')}`);
   assert.equal(icp.source, 'icp.md');
 });
 
-test('o caso parecido só pode ser um cluster declarado no icp.md', () => {
+test('the similar case can only be a cluster declared in icp.md', () => {
   // Em vez de listar nomes proibidos (que os colocaria neste arquivo), a garantia é a
   // inversa: a saída tem de estar na lista do pacote, ou ser o texto de "sem caso".
   const permitidos = ['Payment processors', 'Marketplaces', 'Neobanks', 'Lending platforms', NO_CASE];
@@ -190,7 +190,7 @@ test('o caso parecido só pode ser um cluster declarado no icp.md', () => {
   }
 });
 
-test('segmento desconhecido degrada para o default', () => {
+test('an unknown segment degrades to the default', () => {
   const r = classify({ ...base, segment: 'coisa-que-nao-existe' });
   assert.equal(r.casoParecido, NO_CASE);
   assert.equal(r.abordagem, DEFAULT_APPROACH);
