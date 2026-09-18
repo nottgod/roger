@@ -110,7 +110,7 @@ test('entrevista respondida no vazio ainda gera um icp.md válido', () => {
 test('a voz da entrevista reprova o que ela disse que não usa', () => {
   const voice = resolveVoice(toVoiceConfig(ANSWERS));
   const comTravessao = lintMessage('saw the launch — how is the rollout going?', { stage: 'FUP_2', voice });
-  assert.ok(comTravessao.errors.some((e) => /em-dash/.test(e)));
+  assert.ok(comTravessao.errors.some((e) => /em.dash/.test(e)));
 
   const semTravessao = lintMessage('saw the launch. how is the rollout going?', { stage: 'FUP_2', voice });
   assert.deepEqual(semTravessao.errors, []);
@@ -127,7 +127,7 @@ test('o teto de tamanho depende do CANAL, não só do "curta/média/longa"', () 
   const mesmaMensagem = 'x'.repeat(500);
   const naDm = lintMessage(mesmaMensagem, { stage: 'FUP_1', voice: noLinkedin });
   const noMail = lintMessage(mesmaMensagem, { stage: 'FUP_1', voice: noEmail });
-  assert.ok(naDm.errors.some((e) => /máx 300/.test(e)), 'na DM, 500 chars estoura');
+  assert.ok(naDm.errors.some((e) => /max 300/.test(e)), 'na DM, 500 chars estoura');
   assert.deepEqual(noMail.errors, [], 'no e-mail, os mesmos 500 chars passam');
 });
 

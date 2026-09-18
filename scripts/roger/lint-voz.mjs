@@ -65,16 +65,16 @@ export function checkPlaceholders(msg) {
 export function checkMarkdownLeak(msg) {
   const out = [];
   if (/\*\*|##|```/.test(msg)) out.push(err('markdown', 'markdown (** ## ```) vazando no texto de envio'));
-  if (msg.includes('|')) out.push(err('pipe', 'pipe (|) não pertence a uma mensagem'));
-  if (/^>/m.test(msg)) out.push(err('blockquote', 'blockquote (>) não pertence a uma mensagem'));
-  if (/^\s*[-*•]\s+/m.test(msg)) out.push(err('bullets', 'bullet/lista não pertence a uma mensagem'));
+  if (msg.includes('|')) out.push(err('pipe', 'a pipe (|) does not belong in a message'));
+  if (/^>/m.test(msg)) out.push(err('blockquote', 'a blockquote (>) does not belong in a message'));
+  if (/^\s*[-*•]\s+/m.test(msg)) out.push(err('bullets', 'a bullet list does not belong in a message'));
   return out;
 }
 
 export function checkDeadCorporate(msg) {
   const lower = msg.toLowerCase();
   return DEAD_CORPORATE.filter((p) => lower.includes(p))
-    .map((p) => err('dead-corporate', `frase morta de vendas: "${p}"`));
+    .map((p) => err('dead-corporate', `dead sales phrase: "${p}"`));
 }
 
 export function checkQuestionCount(msg, voice) {
@@ -91,7 +91,7 @@ export function checkLength(msg, voice, flags) {
   const len = msg.length;
   const cap = flags.isConnection ? (voice.caps?.connection ?? 300) : (voice.caps?.default ?? voice.maxChars ?? 600);
   if (cap && len > cap) {
-    out.push(err('too-long', `mensagem com ${len} chars (máx ${cap}${flags.isConnection ? ' para connection' : ''})`));
+    out.push(err('too-long', `message is ${len} chars (max ${cap}${flags.isConnection ? ' for a connection request' : ''})`));
   } else if (voice.warnAboveChars && len > voice.warnAboveChars && !flags.isConnection) {
     out.push(warn('long', `mensagem com ${len} chars, acima do alvo (${voice.warnAboveChars})`));
   }
@@ -104,29 +104,29 @@ export function checkLength(msg, voice, flags) {
 // ── checks da pessoa (todos no-op quando a voz não pede) ──────────────────────
 export function checkDashes(msg, voice) {
   const out = [];
-  if (voice.banEmDash && msg.includes('—')) out.push(err('em-dash', 'em-dash (—) proibido nesta voz'));
-  if ((voice.banEnDash ?? voice.banEmDash) && msg.includes('–')) out.push(err('en-dash', 'en-dash (–) proibido nesta voz'));
+  if (voice.banEmDash && msg.includes('—')) out.push(err('em-dash', 'em dash (—) not allowed in this voice'));
+  if ((voice.banEnDash ?? voice.banEmDash) && msg.includes('–')) out.push(err('en-dash', 'en dash (–) not allowed in this voice'));
   return out;
 }
 
 export function checkGreeting(msg, voice) {
   if (!voice.banFormalGreeting) return [];
   if (/^(hey|hi|hello|dear)\b/i.test(msg.trim())) {
-    return [err('formal-greeting', 'saudação formal no início (Hey/Hi/Hello/Dear) — esta voz abre direto')];
+    return [err('formal-greeting', 'formal greeting at the start (Hey/Hi/Hello/Dear) — this voice opens straight in')];
   }
   return [];
 }
 
 export function checkEmoji(msg, voice, flags) {
-  if (voice.banEmoji && EMOJI_RE.test(msg)) return [err('emoji', 'emoji proibido nesta voz')];
+  if (voice.banEmoji && EMOJI_RE.test(msg)) return [err('emoji', 'emoji not allowed in this voice')];
   if (voice.banEmojiFirstTouch && flags.isFirstTouch && EMOJI_RE.test(msg)) {
-    return [err('emoji-first-touch', 'emoji no primeiro toque proibido nesta voz')];
+    return [err('emoji-first-touch', 'emoji not allowed on the first touch in this voice')];
   }
   return [];
 }
 
 export function checkExclamation(msg, voice) {
-  if (voice.banExclamation && msg.includes('!')) return [err('exclamation', 'exclamação proibida nesta voz')];
+  if (voice.banExclamation && msg.includes('!')) return [err('exclamation', 'exclamation mark not allowed in this voice')];
   return [];
 }
 
@@ -134,10 +134,10 @@ export function checkBannedList(msg, voice) {
   const lower = msg.toLowerCase();
   const out = [];
   for (const p of voice.bannedPhrases || []) {
-    if (p && lower.includes(String(p).toLowerCase())) out.push(err('banned-phrase', `frase banida nesta voz: "${p}"`));
+    if (p && lower.includes(String(p).toLowerCase())) out.push(err('banned-phrase', `phrase banned in this voice: "${p}"`));
   }
   for (const w of voice.bannedWords || []) {
-    if (w && wordRe(w).test(msg)) out.push(err('banned-word', `palavra banida nesta voz: "${w}"`));
+    if (w && wordRe(w).test(msg)) out.push(err('banned-word', `word banned in this voice: "${w}"`));
   }
   return out;
 }
@@ -145,8 +145,8 @@ export function checkBannedList(msg, voice) {
 export function checkVanityMetrics(msg, voice) {
   if (!voice.banVanityMetrics) return [];
   const out = [];
-  if (VANITY_METRIC.test(msg)) out.push(err('vanity', 'métrica de vaidade (X impressions) banida nesta voz'));
-  if (ENGAGEMENT_RATE.test(msg)) out.push(err('vanity', 'métrica de vaidade (X% engagement) banida nesta voz'));
+  if (VANITY_METRIC.test(msg)) out.push(err('vanity', 'vanity metric (X impressions) banned in this voice'));
+  if (ENGAGEMENT_RATE.test(msg)) out.push(err('vanity', 'vanity metric (X% engagement) banned in this voice'));
   return out;
 }
 
@@ -158,7 +158,7 @@ export function checkSignoff(msg, voice, flags) {
   if (!present) return [];
   const ok = allowed.some((s) => new RegExp(s, 'i').test(flags.stage));
   if (ok) return [];
-  return [err('signoff', `assinatura "${sig}" não é permitida no stage ${flags.stage || '(sem stage)'}`)];
+  return [err('signoff', `sign-off "${sig}" is not allowed at stage ${flags.stage || '(no stage)'}`)];
 }
 
 export function checkCallCta(msg, voice, flags) {
@@ -172,7 +172,7 @@ export function checkCallCta(msg, voice, flags) {
   const asks = patterns.some((re) => re.test(msg));
   const matches = (list) => (list || []).some((s) => new RegExp(s, 'i').test(flags.stage));
   if (asks && matches(rule.bannedIn)) {
-    return [err('call-cta', `pedido de call proibido no stage ${flags.stage}`)];
+    return [err('call-cta', `asking for a call is not allowed at stage ${flags.stage}`)];
   }
   if (!asks && matches(rule.warnIfMissingIn) && msg.length > (rule.minCharsForWarn ?? 0)) {
     return [warn('no-call-cta', 'mensagem sem CTA de call — esta voz fecha chamando para o papo')];
@@ -246,8 +246,8 @@ function main() {
     process.exit(1);
   }
   if (resolved.source !== 'file') {
-    console.log(`⚠ sem voice.json${operator ? ` para "${operator}"` : ' (nenhum operador informado)'} — só as regras universais estão ativas.`);
-    console.log('  As regras de gosto (travessão, saudação, emoji, palavras suas) saem da entrevista: npm run onboarding\n');
+    console.log(`⚠ no voice.json${operator ? ` for "${operator}"` : ' (no operator given)'} — only the universal rules are active.`);
+    console.log('  The rules of taste (dashes, greetings, emoji, your own words) come from the interview: npm run onboarding\n');
   }
   const { voice } = resolved;
 
@@ -268,13 +268,13 @@ function main() {
     }
     const dups = checkBatchDuplicates(items.filter((i) => i.msg));
     for (const d of dups) { console.log(`✗ DUPLICATA: ${d}`); failed = true; }
-    if (!failed) console.log('✓ todas as mensagens passaram na trava de voz');
+    if (!failed) console.log('✓ every message passed the voice guard');
   } else {
     const text = readFileSync(0, 'utf8').trim();
     const { errors, warnings } = lintMessage(text, { stage: stageFlag, voice });
     for (const e of errors) { console.log(`✗ ${e}`); failed = true; }
     for (const w of warnings) console.log(`⚠ ${w}`);
-    if (!errors.length) console.log('✓ passou na trava de voz');
+    if (!errors.length) console.log('✓ passed the voice guard');
   }
 
   process.exit(failed ? 1 : 0);
