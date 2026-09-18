@@ -1,26 +1,26 @@
 #!/usr/bin/env node
-// KPI do roger (Roger v5, F4) — dois eixos:
+// KPIs for Roger — two axes:
 //
-//  (1) reply-rate do outbound (topo de funil, prova do fosso da voz): lê logs/painel-events.jsonl
-//      e imprime, semana a semana, enviadas/respostas/puladas + taxa de resposta.
-//      Régua de mercado (pesquisa 2026-06-09): LinkedIn médio 10.4%, SaaS/tech 4.8-8.8%.
-//      Meta roger: >12-15% = prova vendável.
+//  (1) outbound reply rate (top of funnel, the proof that the voice is the moat): it reads
+//      logs/painel-events.jsonl and prints, week by week, sent/replies/skipped + reply rate.
+//      Market benchmark: LinkedIn averages 10.4%, SaaS/tech 4.8-8.8%.
+//      The bar worth aiming at: >12-15% is a sellable proof.
 //
-//  (2) funil de conversão (Kommo, fundo de funil): lê os leads do dono declarado no .env
-//      e os eventos de mudança de status via API REST (GET, read-only — NUNCA escreve), e reporta
-//      por pipeline: snapshot do funil, reuniões no mês vs meta (+10/mês, goals.md Bloco 2) e as
-//      3 conversões críticas (goals.md 2.3): Desenvolvimento->Qualificado, Qualificado->Reunião
+//  (2) conversion funnel (CRM, bottom of funnel): it reads the leads of the declared owner
+//      and the status change events over the REST API (GET, read-only — it NEVER writes),
+//      and reports per pipeline: a funnel snapshot, meetings this month against the target
+//      (goals.md block 2) and the 3 critical conversions (goals.md 2.3).
 //      Agendada, Reunião Realizada->Negociação.
 //
-// Mede os DOIS pipelines (MAIN + Testes) lado a lado durante a migração pro Testes (oficial).
+// It measures BOTH pipelines side by side during a migration between them.
 //
-// Uso:
-//   node kpi.mjs                          → reply-rate semanal (default)
-//   node kpi.mjs reply                    → idem
-//   node kpi.mjs mark-reply <leadId> [data]  → registra resposta tardia no log do painel
-//   node kpi.mjs funnel [YYYY-MM]         → funil de conversão do Kommo (mês corrente ou informado)
+// Usage:
+//   node kpi.mjs                          → weekly reply rate (default)
+//   node kpi.mjs reply                    → the same
+//   node kpi.mjs mark-reply <leadId> [date]  → records a late reply in the panel log
+//   node kpi.mjs funnel [YYYY-MM]         → the CRM conversion funnel (this month, or the one given)
 //
-// A lógica de agregação é pura e testável (kpi.test.mjs, zero rede). Só o CLI toca a API.
+// The aggregation logic is pure and testable (kpi.test.mjs, zero network). Only the CLI touches the API.
 
 import { readFileSync, appendFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -34,17 +34,17 @@ const LOGDIR = join(HERE, 'logs');
 const EVENTS_FILE = join(LOGDIR, 'painel-events.jsonl');
 const CONFIG_FILE = join(ROOT, 'config.js');
 
-// ── pipelines + etapas: OS IDs SÃO DA SUA CONTA ───────────────────────────────
-// Cada conta de CRM tem os seus. Preencha antes de usar o modo funil; o reply-rate
-// (modo padrão) não depende disto, porque lê o log do painel.
+// ── pipelines + stages: THE IDS ARE FROM YOUR OWN ACCOUNT ─────────────────────
+// Every CRM account has its own. Fill these in before using the funnel mode; the reply
+// rate (the default mode) does not depend on them, because it reads the panel log.
 //
-// Como descobrir os seus:
+// How to find yours:
 //   node -e "import('./kommo-config.mjs').then(k=>k.kget('/leads/pipelines').then(r=>console.log(JSON.stringify(r,null,1))))"
 export const PIPELINES = {
   main: {
     id: null,
     label: 'Seu pipeline',
-    // ordem de exibição = ordem do funil
+    // display order = funnel order
     stages: {
       entrada: null, prospeccao: null, desenvolvimento: null, qualificado: null,
       reuniaoAgendada: null, reuniaoRealizada: null, negociacao: null,
@@ -53,13 +53,13 @@ export const PIPELINES = {
   },
 };
 
-// Quem é o dono dos leads que este relatório conta. Vem do .env, não daqui.
+// Who owns the leads this report counts. It comes from .env, not from here.
 export const OWNER_USER_ID = loadRogerConfig().kommo.ownerId;
 export const MEETING_GOAL_PER_MONTH = 10; // sua meta de reuniões por mês
 
-// ── funções puras (testáveis, sem rede) ──
+// ── pure functions (testable, no network) ──
 
-// Snapshot: conta leads do pipeline por etapa. status fora do mapa cai em _other.
+// Snapshot: counts the leads of a pipeline per stage. A status outside the map lands in _other.
 export function funnelSnapshot(leads, pipeline) {
   const byId = {};
   for (const [k, v] of Object.entries(pipeline.stages)) byId[v] = k;
@@ -74,8 +74,8 @@ export function funnelSnapshot(leads, pipeline) {
   return { ...counts, _other };
 }
 
-// Conta ENTRADAS em cada etapa (value_after) a partir dos eventos lead_status_changed.
-// Filtra por pipeline e, se leadIdSet for dado, só eventos de leads desse set (leads do dono).
+// Counts ENTRIES into each stage (value_after) from the lead_status_changed events.
+// Filters by pipeline and, if leadIdSet is given, only events for leads in that set.
 export function countEntries(events, pipeline, leadIdSet) {
   const byId = {};
   for (const [k, v] of Object.entries(pipeline.stages)) byId[v] = k;
@@ -92,12 +92,12 @@ export function countEntries(events, pipeline, leadIdSet) {
   return counts;
 }
 
-// Reuniões = entradas na etapa "Reunião de Venda Agendada" no período.
+// Meetings = entries into the "meeting scheduled" stage within the period.
 export function meetingsCount(entries) {
   return (entries && entries.reuniaoAgendada) || 0;
 }
 
-// As 3 conversões críticas (goals.md 2.3) como taxa de fluxo no período. den=0 -> rate null.
+// The 3 critical conversions (goals.md 2.3) as a flow rate over the period. den=0 -> rate null.
 export function criticalConversions(entries) {
   const e = entries || {};
   const rate = (num, den) => (den > 0 ? num / den : null);
@@ -108,19 +108,19 @@ export function criticalConversions(entries) {
   };
 }
 
-// Intervalo unix [from,to) do mês YYYY-MM em BRT (UTC-3). monthStr default = mês corrente exige `now`.
+// The unix range [from,to) of the month YYYY-MM in BRT (UTC-3). A default monthStr needs `now`.
 export function monthRange(monthStr) {
   const [y, m] = monthStr.split('-').map((x) => parseInt(x, 10));
-  // 00:00 BRT do dia 1 = 03:00 UTC; mês seguinte idem
+  // 00:00 BRT on the 1st = 03:00 UTC; the following month likewise
   const from = Math.floor(Date.UTC(y, m - 1, 1, 3, 0, 0) / 1000);
   const to = Math.floor(Date.UTC(y, m, 1, 3, 0, 0) / 1000);
   return { from, to, label: monthStr };
 }
 
-// ── camada API (isolada, no-throw, GET only) ──
+// ── API layer (isolated, never throws, GET only) ──
 
-// Mantém o nome e a assinatura antigos (alguém pode chamar com um arquivo de teste),
-// mas a leitura é a do carregador único: process.env > .env > config.js legado.
+// It keeps the old name and signature (someone may call it with a test file), but the
+// reading is the single loader one: process.env > .env > legacy config.js.
 export function loadConfig(file = CONFIG_FILE) {
   const cfg = loadRogerConfig(file === CONFIG_FILE ? {} : { legacyFile: file, envFile: null });
   return { token: cfg.kommo.token, subdomain: cfg.kommo.subdomain };
@@ -250,7 +250,7 @@ if (isMain) {
     const { token, subdomain } = loadConfig();
     if (!token || !subdomain) { console.error('config.js sem KOMMO_TOKEN/KOMMO_SUBDOMAIN'); process.exit(1); }
     const base = `https://${subdomain}.kommo.com`;
-    // mês corrente em BRT quando não informado
+    // the current month in BRT when none is given
     const now = new Date();
     const brt = new Date(now.getTime() - 3 * 3600_000);
     const monthStr = arg1 || `${brt.getUTCFullYear()}-${String(brt.getUTCMonth() + 1).padStart(2, '0')}`;

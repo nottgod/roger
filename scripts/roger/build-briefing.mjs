@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Gera o BRIEFING ÚNICO de coleta pro Cowork (Claude App) a partir das tasks do dia.
-// É a COLAGEM 1 do fluxo: você cola o arquivo inteiro de uma vez,
-// e o Cowork devolve um dump único (COLAGEM 2) no formato pedido no fim do briefing.
+// Builds the SINGLE research briefing to paste into a chat assistant, from today's tasks.
+// It is PASTE 1 of the flow: you paste the whole file in one go, and the assistant
+// returns a single dump (PASTE 2) in the format asked for at the end of the briefing.
 //
-// Uso: node build-briefing.mjs            → escreve briefing-cowork-YYYY-MM-DD.md na raiz
-//      node build-briefing.mjs --limit 15 → só os primeiros 15 leads
+// Usage: node build-briefing.mjs            → writes briefing-cowork-YYYY-MM-DD.md at the root
+//        node build-briefing.mjs --limit 15 → only the first 15 leads
 
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
 const LIMIT = args.includes('--limit') ? parseInt(args[args.indexOf('--limit') + 1], 10) : Infinity;
 
-// mesma janela da skill: hoje (seg-qui) ou próxima segunda (sex-dom)
+// the same window as the skill: today (Mon-Thu) or next Monday (Fri-Sun)
 function endOfDayBRT(date) {
   return Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1, 2, 59, 59) / 1000);
 }
@@ -46,7 +46,7 @@ while (true) {
   page++;
 }
 
-// visibilidade total: contar por tipo, inclusive os que não entram no briefing
+// full visibility: count by type, including the ones that do not make the briefing
 const byType = {};
 for (const t of tasks) {
   const name = TASK_TYPE_NAME[t.task_type_id] || `tipo_${t.task_type_id}`;

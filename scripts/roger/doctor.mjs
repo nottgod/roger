@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// doctor.mjs — diz o que está pronto e o que falta, antes de você gastar tempo ou dinheiro.
+// doctor.mjs — says what is ready and what is missing, before you spend time or money.
 //
-// Duas regras que valem para todo este arquivo:
-//   1. NUNCA imprime uma chave. Só a máscara (4 últimos caracteres).
-//   2. A validação de chave paga é feita SEM COMPRAR NADA: manda um pedido
-//      deliberadamente incompleto e olha o código de resposta. 401/403 significa
-//      chave ruim; 400 significa "a chave passou, o pedido é que estava vazio".
-//      Uma busca de verdade custaria dinheiro só para dizer "ok".
+// Two rules that hold for this whole file:
+//   1. It NEVER prints a key. Only the mask (last 4 characters).
+//   2. A paid key is validated WITHOUT BUYING ANYTHING: it sends a deliberately
+//      incomplete request and looks at the status code. 401/403 means a bad key;
+//      400 means "the key got through, it was the request that was empty".
+//      A real search would cost money just to say "ok".
 //
-// uso:
-//   node doctor.mjs            checa tudo
-//   node doctor.mjs --offline  só o que não precisa de rede
+// usage:
+//   node doctor.mjs            checks everything
+//   node doctor.mjs --offline  only what needs no network
 
 import { loadConfig, mask, KEY_SPECS } from './lib/config.mjs';
 
@@ -31,7 +31,7 @@ function report(status, label, detail) {
   out(`  ${MARK[status]}  ${label}${detail ? D(` — ${detail}`) : ''}`);
 }
 
-// ── ambiente ──────────────────────────────────────────────────────────────────
+// ── environment ───────────────────────────────────────────────────────────────
 function checkNode() {
   const major = Number(process.versions.node.split('.')[0]);
   if (major >= 22) report('ok', `Node ${process.versions.node}`);
@@ -69,7 +69,7 @@ function checkKeysPresence(cfg) {
   }
 }
 
-// ── rede: valida sem comprar ──────────────────────────────────────────────────
+// ── network: validating without buying ────────────────────────────────────────
 async function probe(url, init, timeoutMs = 10000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -133,8 +133,8 @@ async function checkResearch(cfg) {
   }
 }
 
-// ── o braço de envio ──────────────────────────────────────────────────────────
-// A pergunta que a tela 7 do onboarding deixa no ar: estou pronto para mandar?
+// ── the sending arm ───────────────────────────────────────────────────────────
+// The question screen 7 of the onboarding leaves hanging: am I ready to send?
 async function checkSendArm(cfg) {
   const { existsSync } = await import('node:fs');
 
@@ -159,7 +159,7 @@ async function checkSendArm(cfg) {
     const { createJournal } = await import('./lib/journal.mjs');
     const { fileURLToPath } = await import('node:url');
     const journalDir = `${fileURLToPath(ROOT)}.roger/journal`;
-    // Um diagnóstico não deveria criar estado: se o journal ainda não existe, só diz isso.
+    // A diagnosis should not create state: if the journal does not exist yet, just say so.
     if (!existsSync(journalDir)) {
       report('ok', 'no send journal yet', 'it is created on the first real send');
       return;

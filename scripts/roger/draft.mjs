@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// draft.mjs — a ponte entre o que a Roger sabe e o modelo que VOCÊ paga.
+// draft.mjs — the bridge between what Roger knows and the model YOU pay for.
 //
-// A Roger não escreve a mensagem. Ela decide se o lead vale, pesquisa o que dá para
-// pesquisar, e monta o briefing: diagnóstico, cultura, redação e os fatos reais. Quem
-// escreve é o modelo que você já usa — Claude, ChatGPT, o que for. Este comando entrega
-// o briefing pronto para colar lá, com a instrução na frente.
+// Roger does not write the message. It decides whether the lead is worth writing to,
+// researches what it can, and builds the briefing: diagnosis, culture, wording and the
+// real facts. The writing is done by the model you already use — Claude, ChatGPT,
+// whichever. This command hands you that briefing ready to paste, instruction first.
 //
-// Por que não embutir um modelo aqui: seria cobrar de você uma chave a mais, e escolher
-// por você qual modelo usar. O seu já está pago.
+// Why no model is embedded here: it would cost you one more key, and it would pick the
+// model for you. Yours is already paid for.
 //
-// uso:
+// usage:
 //   npm run draft -- --lead '{"name":"Ana","company":"NorthPay","geo":"USA","role":"Head of Finance"}'
 //   npm run draft -- --file leads.csv --n 2
 //   npm run draft -- --file leads.csv --n 2 --stage FUP_2
@@ -24,8 +24,8 @@ const B = (s) => `\x1b[1m${s}\x1b[0m`;
 const D = (s) => `\x1b[2m${s}\x1b[0m`;
 const out = (s = '') => process.stdout.write(s + '\n');
 
-// A instrução que vai na frente do briefing. Curta de propósito: o briefing já diz tudo,
-// e prompt longo faz o modelo escrever prompt, não mensagem.
+// The instruction that goes in front of the briefing. Short on purpose: the briefing
+// already says everything, and a long prompt makes the model write prompt, not message.
 export function instruction(operator, stage) {
   return [
     `You are writing ONE outbound message as ${operator}, to be sent on LinkedIn.`,
@@ -59,7 +59,7 @@ function parseArgs(argv) {
   };
 }
 
-// Resolve UM lead: do --lead (JSON) ou da linha --n do --file.
+// Resolves ONE lead: from --lead (JSON) or from row --n of --file.
 export function resolveLead({ leadJson, file, n }, deps = {}) {
   const read = deps.readLeadsFile || readLeadsFile;
   if (leadJson) {
@@ -88,8 +88,8 @@ async function main() {
     process.exit(1);
   }
 
-  // Pesquisa: só se houver chave. Sem chave a Roger escreve com o que a planilha trouxe,
-  // e diz isso — em vez de fingir que fez o dever de casa.
+  // Research: only if there is a key. Without one, Roger writes with what the spreadsheet
+  // gave it, and says so — instead of pretending it did its homework.
   const { keys } = loadConfig();
   let intel = null;
   let pesquisou = false;

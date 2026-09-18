@@ -1,27 +1,27 @@
 #!/usr/bin/env node
-// Trava dura de voz — bloqueia (exit 1) mensagem que viola as regras mecânicas.
-// Roda ANTES de qualquer mensagem aparecer para envio.
+// The hard voice guard — blocks (exit 1) any message that breaks the mechanical rules.
+// It runs BEFORE any message reaches the point of being sent.
 //
-// Duas categorias, e a diferença é o ponto deste arquivo:
+// Two categories, and the difference between them is the point of this file:
 //
-//   UNIVERSAL  — ruim em qualquer voz (placeholder não substituído, markdown vazando,
-//                corporativês morto, mensagem que estoura o limite). Não se configura.
-//   DA PESSOA  — gosto de quem assina (travessão, "Hey", emoji, palavras que ela não diz,
-//                assinatura, CTA). Vem de rapport/operators/<slug>/voice.json, que a
-//                entrevista de voz gera. Sem arquivo, essas regras ficam DESLIGADAS e o
-//                CLI avisa — a trava nunca afrouxa em silêncio.
+//   UNIVERSAL — bad in any voice (an unreplaced placeholder, markdown leaking through,
+//               dead corporate speak, a message over the limit). Not configurable.
+//   YOURS     — the taste of whoever signs it (dashes, "Hey", emoji, words they never
+//               use, the sign-off, the CTA). It comes from rapport/operators/<slug>/
+//               voice.json, which the voice interview writes. With no file, those rules
+//               stay OFF and the CLI says so — the guard never loosens in silence.
 //
-// Uso:
+// Usage:
 //   node lint-voz.mjs batch-2026-06-10.json --operator example
-//   echo "texto" | node lint-voz.mjs --stage FUP_2 --operator example
+//   echo "some text" | node lint-voz.mjs --stage FUP_2 --operator example
 //
-// Cada check é uma função exportada e testável isoladamente (lint-voz.test.mjs).
+// Every check is an exported function, testable on its own (lint-voz.test.mjs).
 
 import { readFileSync } from 'node:fs';
 import { loadVoice } from './lib/voice.mjs';
 
-// ── universal: corporativês morto ─────────────────────────────────────────────
-// Frases que denunciam template em qualquer idioma de vendas, para qualquer operador.
+// ── universal: dead corporate speak ───────────────────────────────────────────
+// Phrases that give away a template in any sales language, for any operator.
 export const DEAD_CORPORATE = [
   "i'd love to", 'i hope this finds you', 'hope this finds you', 'synergy', 'synergies',
   'value proposition', 'looking forward to', 'best regards', 'touch base',
@@ -30,7 +30,7 @@ export const DEAD_CORPORATE = [
   'explore synergies',
 ];
 
-// Placeholders que ficaram sem substituir. Enviar isso é o erro mais barato de evitar.
+// Placeholders left unreplaced. Sending one of these is the cheapest mistake to avoid.
 export const PLACEHOLDERS = ['[firstname]', '[company]', '[name]', '{nome}', '{name}', '{company}'];
 
 const VANITY_METRIC = /\d+\s*(?:million|m|k)?\s*impressions\b/i;
@@ -55,7 +55,7 @@ function wordRe(word) {
   return new RegExp(`\\b${String(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
 }
 
-// ── checks universais ─────────────────────────────────────────────────────────
+// ── universal checks ──────────────────────────────────────────────────────────
 export function checkPlaceholders(msg) {
   const lower = msg.toLowerCase();
   return PLACEHOLDERS.filter((p) => lower.includes(p))
@@ -78,7 +78,7 @@ export function checkDeadCorporate(msg) {
 }
 
 export function checkQuestionCount(msg, voice) {
-  // `false` desliga o check de propósito. `null`/ausente = não foi declarado, vale o padrão.
+  // `false` turns the check off on purpose. `null`/absent = never declared, use the default.
   if (voice.maxQuestions === false) return [];
   const max = voice.maxQuestions ?? 1;
   const n = (msg.match(/\?/g) || []).length;
@@ -101,7 +101,7 @@ export function checkLength(msg, voice, flags) {
   return out;
 }
 
-// ── checks da pessoa (todos no-op quando a voz não pede) ──────────────────────
+// ── the person's own checks (all no-ops when the voice does not ask) ──────────
 export function checkDashes(msg, voice) {
   const out = [];
   if (voice.banEmDash && msg.includes('—')) out.push(err('em-dash', 'em dash (—) not allowed in this voice'));
@@ -180,10 +180,10 @@ export function checkCallCta(msg, voice, flags) {
   return [];
 }
 
-// ── composição ────────────────────────────────────────────────────────────────
-// lintMessage(msg, 'FUP_2')                      → só as regras universais
-// lintMessage(msg, 'FUP_2', voice)               → universais + as da pessoa
-// lintMessage(msg, { stage: 'FUP_2', voice })    → idem, forma nomeada
+// ── composition ───────────────────────────────────────────────────────────────
+// lintMessage(msg, 'FUP_2')                      → universal rules only
+// lintMessage(msg, 'FUP_2', voice)               → universal + the person's
+// lintMessage(msg, { stage: 'FUP_2', voice })    → the same, in named form
 export function lintMessage(msg, stageOrOpts = 'FUP', maybeVoice = null) {
   const opts = typeof stageOrOpts === 'object' && stageOrOpts !== null ? stageOrOpts : { stage: stageOrOpts };
   const voice = opts.voice || maybeVoice || loadVoice(null).voice;
@@ -213,7 +213,7 @@ export function lintMessage(msg, stageOrOpts = 'FUP', maybeVoice = null) {
   };
 }
 
-// Anti-blast: duas mensagens quase iguais no mesmo lote são detectáveis de fora.
+// Anti-blast: two nearly identical messages in the same batch are detectable from outside.
 export function checkBatchDuplicates(items, threshold = 0.8) {
   const issues = [];
   for (let i = 0; i < items.length; i += 1) {

@@ -36,7 +36,7 @@ const BLOCK_PATTERNS = [
 export function detectBlock({ url = '', bannerText = '' } = {}) {
   for (const re of BLOCK_PATTERNS) {
     if (re.test(String(url)) || re.test(String(bannerText))) {
-      return refuse('blocked', 'a plataforma sinalizou bloqueio ou limite — a rodada encerra, ninguém tenta resolver isso');
+      return refuse('blocked', 'the platform signalled a block or a limit — the run ends, nobody tries to work around it');
     }
   }
   return allow();
@@ -91,41 +91,41 @@ export function decide(snapshot = {}, touch = {}, opts = {}) {
   if (!block.ok) return block;
 
   if (opts.capReached) {
-    return refuse('cap-reached', 'teto de envios da conta atingido hoje — a conta é o que se queima, e ela não se repõe');
+    return refuse('cap-reached', 'the send cap for this account is reached today — the account is what burns, and it cannot be replaced');
   }
   if (opts.alreadyTouchedToday) {
-    return refuse('same-day', 'este lead já recebeu um toque hoje');
+    return refuse('same-day', 'this lead already got a touch today');
   }
   if (opts.outsideWindow) {
-    return refuse('window', 'toque planejado para mais tarde — atrasado sai, adiantado não');
+    return refuse('window', 'this touch is planned for later — late still goes, early does not');
   }
 
   if (s.hasMessageChannel === false) {
-    return refuse('no-message-channel', 'não há caminho de mensagem neste perfil — é questão de conexão, não de conteúdo');
+    return refuse('no-message-channel', 'there is no message path on this profile — it is a connection problem, not a content one');
   }
   if (s.isInMailComposer === true) {
-    return refuse('inmail', 'compositor pago: o lead não é mais conexão direta, e isto gastaria crédito achando que era mensagem normal');
+    return refuse('inmail', 'the paid composer: the lead is no longer a direct connection, and this would spend credit thinking it was a normal message');
   }
   if (touch.recipient && !recipientMatches(touch.recipient, s.recipientName)) {
-    return refuse('recipient-mismatch', `não confirmei o destinatário (esperava "${touch.recipient}", a tela diz "${s.recipientName ?? '—'}")`);
+    return refuse('recipient-mismatch', `I could not confirm the recipient (expected "${touch.recipient}", the screen says "${s.recipientName ?? '—'}")`);
   }
   if (!Array.isArray(s.bubbles)) {
-    return refuse('unreadable-thread', 'não consegui ler a conversa — "não sei ler" nunca é "está vazia"');
+    return refuse('unreadable-thread', 'I could not read the conversation — cannot read is never the same as empty');
   }
   if (wroteFirst(s.bubbles)) {
-    return refuse('wrote-first', 'ele escreveu primeiro: isto é conversa, não outbound — vai para o humano');
+    return refuse('wrote-first', 'they wrote first: this is a conversation, not outbound — it goes to the human');
   }
   if (alreadyReplied(s.bubbles)) {
-    return refuse('already-replied', 'o lead já respondeu — responder pitch com pitch é o pior que se pode fazer aqui');
+    return refuse('already-replied', 'the lead already replied — answering a reply with a pitch is the worst thing to do here');
   }
   if (isDuplicate(s.bubbles, touch.text)) {
-    return refuse('duplicate', 'este texto já está na conversa');
+    return refuse('duplicate', 'this text is already in the conversation');
   }
   if (!String(touch.text || '').trim()) {
-    return refuse('empty', 'sem texto para enviar');
+    return refuse('empty', 'no text to send');
   }
   if (touch.approved !== true) {
-    return refuse('not-approved', 'este toque não foi aprovado por um humano');
+    return refuse('not-approved', 'this touch was not approved by a human');
   }
 
   return allow();

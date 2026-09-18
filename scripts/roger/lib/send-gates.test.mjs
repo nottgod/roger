@@ -29,7 +29,7 @@ test('a block comes from the URL or a platform banner', () => {
   assert.equal(detectBlock({ url: 'https://www.linkedin.com/authwall' }).ok, false);
   assert.equal(detectBlock({ bannerText: 'We noticed some unusual activity' }).ok, false);
   assert.equal(detectBlock({ bannerText: "You've reached the weekly invitation limit" }).ok, false);
-  assert.match(detectBlock({ url: '/checkpoint/' }).reason, /a rodada encerra/);
+  assert.match(detectBlock({ url: '/checkpoint/' }).reason, /the run ends/);
 });
 
 // ─── recipient ────────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ test('the full name matches; a first name alone is not enough', () => {
 test('an unconfirmed recipient refuses (fails closed)', () => {
   const r = decide({ ...ok, recipientName: 'Ana Costa' }, touch);
   assert.equal(r.code, 'recipient-mismatch');
-  assert.match(r.reason, /esperava "Ana Ribeiro"/);
+  assert.match(r.reason, /expected "Ana Ribeiro"/);
 });
 
 test('a screen with no recipient name also refuses', () => {
@@ -61,7 +61,7 @@ test('a profile with no message channel is a connection problem, not a content o
 test('the paid composer does not send', () => {
   const r = decide({ ...ok, isInMailComposer: true }, touch);
   assert.equal(r.code, 'inmail');
-  assert.match(r.reason, /crédito/);
+  assert.match(r.reason, /credit/);
 });
 
 // ─── estado da conversa ───────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ test('they wrote first, so it is a conversation, not outbound', () => {
 test('an unreadable thread refuses: cannot read is never the same as empty', () => {
   const r = decide({ ...ok, bubbles: null }, touch);
   assert.equal(r.code, 'unreadable-thread');
-  assert.match(r.reason, /nunca é "está vazia"/);
+  assert.match(r.reason, /never the same as empty/);
 });
 
 test('a genuinely empty thread passes', () => {
@@ -125,7 +125,7 @@ test('empty text does not go', () => {
 test('a reached cap refuses before anything on the screen', () => {
   const r = decide({}, touch, { capReached: true });
   assert.equal(r.code, 'cap-reached');
-  assert.match(r.reason, /não se repõe/);
+  assert.match(r.reason, /cannot be replaced/);
 });
 
 test('one touch per lead per day', () => {

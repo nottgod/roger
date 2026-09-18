@@ -1,18 +1,18 @@
 #!/usr/bin/env node
-// intel.mjs — camada Intelligence da Roger v5 (F2).
-// Orquestra Fundable + Exa + Firecrawl para enriquecer UM lead, detecta os sinais
-// OBJETIVOS de timing (icp.md 3.7) e gap (diagnosis.md 3.11), monta o shape que
-// score.mjs `classify()` consome, e produz um report acionável.
+// intel.mjs — the Intelligence layer.
+// It orchestrates the funding lookup + Exa + Firecrawl to enrich ONE lead, detects the
+// OBJECTIVE timing (icp.md 3.7) and gap (diagnosis.md 3.11) signals, builds the shape
+// that `classify()` in score.mjs consumes, and produces an actionable report.
 //
-// Sinais SUBJETIVOS do gap signature (founder qualitativo, narrativa inconsistente,
-// citado por voz relevante / bridges) NÃO são inferidos por código — entram como
-// `needsJudgment` no report, pra humano avaliar. Honestidade > invenção.
+// The SUBJECTIVE gap signals (a qualitative read on the founder, an inconsistent story,
+// being cited by a voice that matters) are NOT inferred by code — they land in the report
+// as `needsJudgment`, for a human to weigh. Honesty over invention.
 //
-// Scoring é do score.mjs (F1). intel.mjs NÃO reimplementa scoring.
+// Scoring belongs to score.mjs. intel.mjs does NOT reimplement scoring.
 //
-// ESM, Node 24. Sem deps externas. APIs via lib/sources.mjs (fetch nativo).
+// ESM, Node 24. No external deps. APIs via lib/sources.mjs (native fetch).
 //
-// CLI: node intel.mjs '{"name":"Jane","company":"AcmeRWA"}'  → imprime report JSON.
+// CLI: node intel.mjs '{"name":"Jane","company":"AcmeRWA"}'  → prints the report as JSON.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -24,17 +24,17 @@ import { loadConfig } from './lib/config.mjs';
 
 const CONFIG_PATH = new URL('../../config.js', import.meta.url);
 
-// Lê EXA_KEY / FUNDABLE_KEY / FIRECRAWL_KEY.
-// Ordem: env var > config.js (parse leve, sem `import` pois config.js não exporta).
-// config.js NUNCA é comitado (segredos). FIRECRAWL_KEY pode só existir no env.
+// Reads EXA_KEY / FUNDABLE_KEY / FIRECRAWL_KEY.
+// Order: env var > .env > legacy config.js.
+// config.js is NEVER committed (secrets). FIRECRAWL_KEY may exist only in the env.
 export function loadKeys(env = process.env) {
-  // Delegado ao carregador único (lib/config.mjs): process.env > .env > config.js legado.
-  // A assinatura segue aceitando `env` para os testes injetarem sem tocar globals.
+  // Delegated to the single loader (lib/config.mjs): process.env > .env > legacy config.js.
+  // The signature still accepts `env` so the tests can inject without touching globals.
   return loadConfig({ env }).keys;
 }
 
-// ── Coleta: orquestra Fundable → website → Firecrawl → pain-point ────────────
-// `deps` permite injetar coletores mockados nos testes (default: os reais).
+// ── Collection: funding → website → Firecrawl → pain point ───────────────────
+// `deps` lets the tests inject mocked collectors (default: the real ones).
 export async function collectIntel(lead, keys, deps = {}) {
   const _fundableLookup = deps.fundableLookup || fundableLookup;
   const _findWebsiteViaExa = deps.findWebsiteViaExa || findWebsiteViaExa;
@@ -51,31 +51,31 @@ export async function collectIntel(lead, keys, deps = {}) {
   };
   if (!company) return out;
 
-  // 1) Fundable: funding/round/founders/investors/headcount
+  // 1) funding: round, founders, investors, headcount
   out.fundable = await _fundableLookup(keys.fundableKey, { companyName: company });
   out.sources.fundable = out.fundable ? 'ok' : 'fail';
   if (out.fundable?.website && !out.website) out.website = out.fundable.website;
 
-  // 2) Website via Exa se ainda falta
+  // 2) website via Exa, if it is still missing
   if (!out.website) {
     out.website = await _findWebsiteViaExa(keys.exaKey, company);
   }
 
-  // 3) Firecrawl no site
+  // 3) Firecrawl on the site
   if (out.website) {
     out.scraped = await _firecrawlScrape(keys.firecrawlKey, out.website);
     out.sources.firecrawl = (out.scraped && Object.keys(out.scraped).length) ? 'ok' : 'fail';
   }
 
-  // 4) Pain-point via Exa
+  // 4) pain point via Exa
   out.painPoint = await _exaPainPoint(keys.exaKey, company, out.website);
   out.sources.exa = out.painPoint ? 'ok' : 'fail';
 
   return out;
 }
 
-// ── Detecção de sinais OBJETIVOS (timing 3.7 + gap 3.11) ─────────────────────
-// Só marca true o que dá pra inferir de dados coletados. O resto é needsJudgment.
+// ── Detecting the OBJECTIVE signals (timing 3.7 + gap 3.11) ─────────────────
+// It only marks true what can be inferred from collected data. The rest is needsJudgment.
 export function detectSignals(collected, lead = {}) {
   const f = collected?.fundable || {};
   const s = collected?.scraped || {};
@@ -84,7 +84,7 @@ export function detectSignals(collected, lead = {}) {
   // --- TIMING (icp.md 3.7) ---
   const timing = {};
 
-  // funding <=12m: precisa de dealDate parseável
+  // funded within 12 months: needs a parseable deal date
   if (f.dealDate) {
     const dt = Date.parse(f.dealDate);
     if (!Number.isNaN(dt)) {
@@ -93,27 +93,27 @@ export function detectSignals(collected, lead = {}) {
     }
   }
 
-  // lançamento recente ou por vir: heurística textual
+  // a recent or upcoming launch: text heuristic
   if (/\b(launch(ed|ing)?|shipped|rolling out|now live|ga\b)/.test(desc)
       && /\b(soon|upcoming|recently|new|this (month|quarter)|q[1-4]\s?20\d\d)\b/.test(desc)) {
     timing.newLaunch = true;
   }
 
-  // contratando para a área do problema: heurística textual
+  // hiring for the area of the problem: text heuristic
   if (/\b(hiring|we'?re hiring|join us|open role)\b/.test(desc)) {
     timing.hiringForTheProblem = true;
   }
 
-  // imprensa, parceria ou anúncio recente: heurística textual
+  // press, a partnership or a recent announcement: text heuristic
   if (/\b(partner(ship|ed)?|integration|collaborat|press|featured|award)/.test(desc)
       && /\b(announc|new|recently|this (month|quarter))\b/.test(desc)) {
     timing.pressCoverage = true;
   }
 
-  // --- GAP (diagnosis.md 3.11) — só os OBJETIVOS ---
+  // --- GAP (diagnosis.md 3.11) — only the OBJECTIVE ones ---
   const gap = {};
 
-  // corporativo sem conteúdo de substância: sem blog/research detectável no scrape
+  // a corporate site with no substance: no blog or research detectable in the scrape
   if (collected?.sources?.firecrawl === 'ok') {
     const hasSubstance = /\b(blog|research|whitepaper|case stud|newsletter|documentation|docs)\b/.test(
       `${s.description || ''}`.toLowerCase(),
@@ -121,16 +121,16 @@ export function detectSignals(collected, lead = {}) {
     gap.genericMessaging = !hasSubstance;
   }
 
-  // founder sem LinkedIn ativo: objetivo-fraco. Só marcamos se o scrape NÃO achou linkedin company
-  // E não há linkedin no fundable. (sinal indireto; o qualitativo "inativo 90d" é needsJudgment)
+  // founder with no active LinkedIn: weakly objective. We only mark it when the scrape did
+  // NOT find a company LinkedIn AND there is none in the funding data. (The qualitative
   if (!s.linkedinCompany && !f.linkedin) {
     gap.founderInvisible = undefined; // não afirmamos; vira needsJudgment
   }
 
-  // branding amador: NÃO inferível por código de forma confiável → needsJudgment.
+  // amateur branding: NOT reliably inferable by code → needsJudgment.
 
-  // sinais SUBJETIVOS que NUNCA inferimos (entram no report como needsJudgment):
-  // O que NUNCA inferimos por código: vai para julgamento humano, nomeado.
+  // The SUBJECTIVE signals we NEVER infer (they enter the report as needsJudgment):
+  // What we never infer by code goes to human judgment, named.
   const needsJudgment = [
     'noRecentActivity (quieto em público — precisa de olho humano no perfil)',
     'founderInvisible (o dono do problema não aparece)',
@@ -138,24 +138,24 @@ export function detectSignals(collected, lead = {}) {
     'genericMessaging (a mensagem deles não diz nada de específico)',
   ];
 
-  // limpar chaves undefined (não viram true nem false no shape do score)
+  // strip undefined keys (they must not become true or false in the score shape)
   const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v === true || v === false));
 
   return { timing: clean(timing), gap: clean(gap), needsJudgment };
 }
 
-// ── Monta o shape que score.mjs consome e chama classify ─────────────────────
+// ── Builds the shape score.mjs consumes, and calls classify ──────────────────
 function toScoreLead(lead, collected, signals) {
   const f = collected?.fundable || {};
   const s = collected?.scraped || {};
-  // headcount: prioriza valor explícito do lead > Fundable > hint do scrape
+  // headcount: an explicit value on the lead wins > funding data > a hint from the scrape
   const headcount = typeof lead?.headcount === 'number' ? lead.headcount
     : (typeof f.numEmployees === 'number' ? f.numEmployees
       : (typeof s.teamSizeHint === 'number' ? s.teamSizeHint : undefined));
   return {
     name: lead?.name,
     company: lead?.company || f.name,
-    // campos de gate: o que o lead já trouxe vence; Intelligence preenche o detectável
+    // gate fields: what the lead already carried wins; Intelligence fills in what it can detect
     b2b2: lead?.b2b2,
     headcount,
     web3PostMVP: lead?.web3PostMVP,
@@ -166,10 +166,10 @@ function toScoreLead(lead, collected, signals) {
     segment: lead?.segment || mapSectorToSegment(s.sector || f.industries?.[0]),
     nonIcpFlags: lead?.nonIcpFlags || [],
     expansaoParaMercadoAlvo: lead?.expansaoParaMercadoAlvo,
-    // sinais detectados (objetivos)
+    // detected signals (the objective ones)
     ...signals.timing,
     ...signals.gap,
-    // sinais subjetivos que o humano/F3 já tenha confirmado no lead de entrada vencem
+    // subjective signals a human already confirmed on the incoming lead win
     ...pickSubjective(lead),
   };
 }
@@ -222,7 +222,7 @@ export function buildIntelReport(lead, collected, signals, classification) {
   };
 }
 
-// ── Entry point programático ─────────────────────────────────────────────────
+// ── Programmatic entry point ─────────────────────────────────────────────────
 export async function runIntel(lead, keys, deps = {}) {
   const collected = await collectIntel(lead, keys, deps);
   const signals = detectSignals(collected, lead);

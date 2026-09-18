@@ -1,25 +1,25 @@
 #!/usr/bin/env node
-// Painel do roger — ler, corrigir, APROVAR, e só então mandar.
+// The roger panel — read, fix, APPROVE, and only then send.
 //
-// O que este arquivo faz de diferente do painel antigo:
-//   - o texto é EDITÁVEL e a aprovação é um estado, não um gesto. Nada é enviável
-//     antes de um humano aprovar, e editar depois de aprovar reabre a aprovação.
-//   - "✓ Enviada" fecha a task no Kommo, grava nota [SENT] e cria a próxima FUP na
-//     cadência — mas só aceita lead APROVADO.
-//   - "💬 Respondeu" fecha a task SEM criar FUP (a conversa é do humano).
-//   - GET /approved devolve a fila aprovada: é o que o braço de envio consome.
+// What this file does differently from the old panel:
+//   - the text is EDITABLE and the approval is a state, not a gesture. Nothing is
+//     sendable before a human approves, and editing after approving reopens the approval.
+//   - "✓ Sent" closes the task in the CRM, saves a [SENT] note and creates the next
+//     follow-up in the cadence — but it only accepts an APPROVED lead.
+//   - "💬 Replied" closes the task WITHOUT creating a follow-up (the conversation is the human's).
+//   - GET /approved returns the approved queue: that is what the sending arm consumes.
 //
-// A máquina de estados vive em lib/panel-core.mjs, pura e testada. Aqui fica só o
-// que precisa de rede, disco e HTTP.
+// The state machine lives in lib/panel-core.mjs, pure and tested. What stays here is only
+// what needs network, disk and HTTP.
 //
-// Uso:
-//   node painel-server.mjs batch-2026-06-10.json            # produção
-//   DRY=1 node painel-server.mjs batch-2026-06-10.json      # ensaio (não escreve no Kommo)
+// Usage:
+//   node painel-server.mjs batch-2026-06-10.json            # production
+//   DRY=1 node painel-server.mjs batch-2026-06-10.json      # rehearsal (writes nothing to the CRM)
 //
-// Formato do batch JSON:
+// The batch JSON format:
 // { "date": "2026-06-10", "title": "...", "leads": [ {
-//     "n": 1, "co": "Empresa", "who": "Nome · Cargo",
-//     "url": "https://linkedin.com/in/...", "msg": "texto gerado",
+//     "n": 1, "co": "Company", "who": "Name · Role",
+//     "url": "https://linkedin.com/in/...", "msg": "the generated text",
 //     "stage": "FUP_2",          // MENSAGEM_INICIAL | FUP_1..FUP_5 | FUP_MAIS
 //     "taskId": 123, "leadId": 456,
 //     "hot": true, "fraco": false, "sign": false, "score": "4/5", "note": "..."
@@ -47,9 +47,9 @@ const MAX_BODY = 256 * 1024;
 const batchFile = process.argv[2];
 if (!batchFile) { console.error('uso: node painel-server.mjs <batch.json>'); process.exit(1); }
 
-// O painel aceita DOIS formatos: um batch pronto (JSON) ou a sua PLANILHA de leads.
-// A planilha existe porque nada no projeto gerava o batch: quem tinha a mensagem escrita
-// pelo modelo não tinha como colocá-la aqui sem escrever JSON à mão.
+// The panel accepts TWO formats: a ready batch (JSON) or your own lead SPREADSHEET.
+// The spreadsheet exists because nothing in the project produced the batch: whoever had a
+// message written by their model had no way to get it in here without writing JSON by hand.
 const batch = carregarBatch(resolve(batchFile));
 
 function carregarBatch(caminho) {
@@ -63,14 +63,14 @@ function batchDaPlanilha(caminho) {
   const { leads, errors, warnings } = readLeadsFile(caminho);
   for (const e of errors) console.error(`  ✗ ${e}`);
   for (const w of warnings) console.error(`  ⚠ ${w}`);
-  if (!leads.length) { console.error('nenhum lead legível nesse arquivo'); process.exit(1); }
+  if (!leads.length) { console.error('no readable lead in that file'); process.exit(1); }
   return {
     date: new Date().toISOString().slice(0, 10),
     title: `${leads.length} leads from ${caminho.split("/").pop()}`,
-    // msg vazia de propósito: você cola a mensagem que o seu modelo escreveu, aqui na tela.
+    // msg is deliberately empty: you paste the message your model wrote, right here on screen.
     leads: leads.map((l, i) => ({
       n: i + 1,
-      co: l.company || l.name || '(sem nome)',
+      co: l.company || l.name || '(no name)',
       who: [l.name, l.role].filter(Boolean).join(' · '),
       url: l.linkedin || l.website || '',
       msg: '',
@@ -107,10 +107,10 @@ function logEvent(ev) {
   appendFileSync(EVENTS_FILE, JSON.stringify({ ts: new Date().toISOString(), batch: batch.date, dry: DRY, ...ev }) + '\n');
 }
 
-// ---------- operações Kommo ----------
+// ---------- CRM operations ----------
 
-// Dono conferido nas DUAS entidades. O painel antigo checava a task e depois gravava
-// nota e follow-up no lead sem conferir de quem o lead é.
+// The owner is checked on BOTH entities. The old panel checked the task and then wrote the
+// note and the follow-up on the lead without checking who the lead belongs to.
 async function guardOwnership(item) {
   if (DRY) return;
   const task = await kget(`/tasks/${item.taskId}`);
@@ -131,38 +131,38 @@ async function hasOpenFup(leadId, excludeTaskId) {
 
 async function markSent(item, text) {
   const result = { steps: [] };
-  // Quem veio de planilha não tem CRM. Registrar local e seguir é o certo: tentar
-  // escrever num CRM que não existe seria erro na cara de quem só queria mandar.
+  // Whoever came from a spreadsheet has no CRM. Recording locally and moving on is the
+  // right call: failing at a CRM that does not exist would be an error in their face.
   if (!item.taskId && !item.leadId) {
-    result.steps.push('sem CRM neste lead: registrado só aqui e no log local');
+    result.steps.push('no CRM on this lead: recorded here and in the local log only');
     return result;
   }
-  // dia de envio = dia BRT (não UTC) — envio às 23h BRT ainda conta como hoje
+  // send day = the BRT day (not UTC) — sending at 23:00 BRT still counts as today
   const nowBRT = new Date(Date.now() - 3 * 3600_000);
   const today = new Date(Date.UTC(nowBRT.getUTCFullYear(), nowBRT.getUTCMonth(), nowBRT.getUTCDate(), 12, 0, 0));
   const label = STAGE_LABEL[item.stage] || item.stage;
 
   await guardOwnership(item);
 
-  // 1. fechar task atual
+  // 1. close the current task
   if (!DRY) {
     await kpatch(`/tasks/${item.taskId}`, { is_completed: true, result: { text: `${label} enviada via painel roger` } });
   }
   result.steps.push(`task #${item.taskId} fechada (${label})`);
 
-  // 2. nota [SENT] no lead, com o texto APROVADO (não o gerado)
+  // 2. a [SENT] note on the lead, with the APPROVED text (not the generated one)
   const noteText = `[SENT ${batch.date}] ${label} — "${text}"`;
   if (!DRY) {
     await kpost(`/leads/${item.leadId}/notes`, [{ note_type: 'common', params: { text: noteText } }]);
   }
   result.steps.push('nota [SENT] gravada');
 
-  // 3. próxima FUP, se a cadência tiver próximo passo (fim de sequência não cria nada)
+  // 3. the next follow-up, if the cadence has a next step (end of sequence creates nothing)
   const step = nextStepFor(item.stage, CADENCIA);
   if (step) {
     const dup = DRY ? null : await hasOpenFup(item.leadId, item.taskId);
     if (dup) {
-      result.steps.push(`⚠ já existe task aberta #${dup.id} nesse lead — NÃO criei FUP nova (anti-duplicata)`);
+      result.steps.push(`⚠ there is already an open task #${dup.id} on this lead — no new follow-up created (anti-duplicate)`);
     } else {
       const due = nextValidDate(today, step.days);
       const nextLabel = STAGE_LABEL[step.next];
@@ -176,10 +176,10 @@ async function markSent(item, text) {
           responsible_user_id: USER_ID,
         }]);
       }
-      result.steps.push(`próxima ${nextLabel} criada pra ${due.toISOString().slice(0, 10)} (D+${step.days}${cadSource === 'fallback' ? ', cadência fallback' : ''})`);
+      result.steps.push(`next ${nextLabel} created for ${due.toISOString().slice(0, 10)} (D+${step.days}${cadSource === 'fallback' ? ', fallback cadence' : ''})`);
     }
   } else {
-    result.steps.push('último toque da cadência — sequência encerrada, nada criado');
+    result.steps.push('last touch of the cadence — sequence closed, nothing created');
   }
   return result;
 }
@@ -187,7 +187,7 @@ async function markSent(item, text) {
 async function markReplied(item) {
   const result = { steps: [] };
   if (!item.taskId && !item.leadId) {
-    result.steps.push('sem CRM neste lead: registrado só aqui');
+    result.steps.push('no CRM on this lead: recorded here only');
     return result;
   }
   await guardOwnership(item);
@@ -199,7 +199,7 @@ async function markReplied(item) {
     }]);
   }
   result.steps.push(`task #${item.taskId} fechada como "lead respondeu"`);
-  result.steps.push('NENHUMA FUP criada — a conversa é sua agora');
+  result.steps.push('NO follow-up created — the conversation is yours now');
   return result;
 }
 
@@ -364,7 +364,7 @@ fetch('/state').then(r=>r.json()).then(s=>{state=s;render();});
 </script></body></html>`;
 }
 
-// ---------- servidor ----------
+// ---------- server ----------
 
 function originOk(req) {
   const origin = req.headers.origin;
@@ -389,7 +389,7 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'GET' && req.url === '/') return send(200, html(), 'text/html');
   if (req.method === 'GET' && req.url === '/state') return send(200, state);
-  // A costura do braço de envio: só o que um humano aprovou.
+  // The seam with the sending arm: only what a human approved.
   if (req.method === 'GET' && req.url === '/approved') {
     return send(200, { date: batch.date, leads: sendable(batch, state) });
   }
@@ -401,7 +401,7 @@ const server = createServer(async (req, res) => {
     try {
       body = await readBody(req);
     } catch (e) {
-      // Antes um JSON malformado derrubava o processo no meio de um lote.
+      // A malformed JSON used to take the process down in the middle of a batch.
       return send(400, { error: `corpo inválido: ${e.message}` });
     }
 
@@ -409,7 +409,7 @@ const server = createServer(async (req, res) => {
     const item = batch.leads.find((l) => l.n === n);
     if (!item) return send(404, { error: 'item não encontrado' });
 
-    // 1. a transição é decidida pelo núcleo puro (e é ele que barra envio sem aprovação)
+    // 1. the transition is decided by the pure core (which is what blocks a send with no approval)
     const t = applyAction(state, item, action, { text, reason, force });
     if (t.error) {
       logEvent({ n, co: item.co, action, refused: t.error });
@@ -417,7 +417,7 @@ const server = createServer(async (req, res) => {
     }
     state = t.state;
 
-    // 2. só depois, o efeito no CRM
+    // 2. only then, the effect on the CRM
     try {
       if (action === 'sent') {
         const r = await markSent(item, finalText(item, entryFor(state, n)));

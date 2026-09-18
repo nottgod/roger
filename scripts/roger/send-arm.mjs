@@ -1,23 +1,23 @@
 #!/usr/bin/env node
-// send-arm.mjs — o braço de envio: pega a fila APROVADA e manda, com as travas.
+// send-arm.mjs — the sending arm: it takes the APPROVED queue and sends, with the guards.
 //
-// A ordem dos passos não é estética, é o que evita dano:
+// The order of the steps is not aesthetic, it is what prevents damage:
 //
-//   1. teto do dia primeiro, ANTES de abrir navegador — teto estourado não gasta
-//      nem um request, e conta queimada não se repõe;
-//   2. reconciliar o journal e TIRAR da fila quem tem envio declarado e não
-//      confirmado (pode ter saído);
-//   3. passada sem navegador, resolvendo o que dá para resolver sem ele (navegador
-//      aberto e parado é lido como travado por quem está olhando);
-//   4. só então abre, e confere a sessão antes do primeiro envio;
-//   5. por lead: olhar a tela → PORTÕES → declarar a intenção → digitar → confirmar
-//      → fechar a intenção → pausar.
+//   1. the daily cap first, BEFORE opening a browser — a blown cap should not spend even
+//      one request, and a burned account cannot be replaced;
+//   2. reconcile the journal and REMOVE from the queue anyone with a declared send that
+//      was never confirmed (it may have gone out);
+//   3. a pass with no browser, resolving whatever can be resolved without it (a browser
+//      open and idle reads as stuck to whoever is watching);
+//   4. only then open it, and check the session before the first send;
+//   5. per lead: look at the screen → GATES → declare the intent → type → confirm
+//      → close the intent → pause.
 //
-// Quem decide é lib/send-gates.mjs (puro). Quem dirige é lib/linkedin-page.mjs (fino).
-// Este arquivo é a orquestração, e é testável: os `deps` entram por parâmetro, então a
-// suite roda o fluxo inteiro com um navegador falso.
+// The deciding is lib/send-gates.mjs (pure). The driving is lib/linkedin-page.mjs (thin).
+// This file is the orchestration, and it is testable: `deps` come in as a parameter, so
+// the suite runs the whole flow against a fake browser.
 //
-// uso:
+// usage:
 //   node send-arm.mjs --queue http://127.0.0.1:4242/approved --identity sam
 //   node send-arm.mjs --queue fila.json --identity sam --dry
 //   node send-arm.mjs --queue fila.json --identity sam --cap 40
@@ -33,10 +33,10 @@ import * as pageLayer from './lib/linkedin-page.mjs';
 export const DEFAULT_CAP = 40;          // conservador de propósito; só se abaixa por flag
 export const DEFAULT_PAUSE = { minMs: 30_000, maxMs: 120_000 };
 
-// fileURLToPath, não URL.pathname: pathname vem percent-encoded e quebra em caminho com espaço.
+// fileURLToPath, not URL.pathname: pathname is percent-encoded and breaks on a path with a space.
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
-// ── a rodada ──────────────────────────────────────────────────────────────────
+// ── the run ───────────────────────────────────────────────────────────────────
 export async function runSendArm(queue, opts = {}) {
   const identity = opts.identity;
   const cap = opts.cap ?? DEFAULT_CAP;
@@ -55,48 +55,48 @@ export async function runSendArm(queue, opts = {}) {
   const leads = [...(queue?.leads || [])];
 
   if (!identity) {
-    out.stopped = 'sem identidade: recuso enviar sem saber qual conta vai falar';
+    out.stopped = 'no identity: I refuse to send without knowing which account speaks';
     return out;
   }
 
-  // 1. teto antes de tudo
+  // 1. the cap, before anything else
   if (journal.capReached(identity, cap)) {
-    out.stopped = `teto do dia atingido para ${identity} (${journal.countToday(identity)}/${cap})`;
+    out.stopped = `daily cap reached for ${identity} (${journal.countToday(identity)}/${cap})`;
     return out;
   }
 
-  // 2. pendências do journal saem da fila
+  // 2. journal pendings leave the queue
   const pending = journal.pending().filter((p) => !identity || p.identity === identity);
   const blocked = new Set(pending.map((p) => String(p.leadId)));
   if (blocked.size) {
     for (const p of pending) {
-      log(`⚠ lead ${p.leadId} tem envio declarado e não confirmado (${p.id}) — fora da fila até alguém conferir`);
+      log(`⚠ lead ${p.leadId} has a declared, unconfirmed send (${p.id}) — out of the queue until someone checks`);
       out.pendingSkipped.push(p.leadId);
     }
   }
 
-  // 3. passada sem navegador
+  // 3. the pass with no browser
   const fila = leads.filter((l) => {
     if (blocked.has(String(l.leadId))) return false;
-    if (!String(l.msg || '').trim()) { out.refused.push({ n: l.n, code: 'empty', reason: 'sem texto' }); return false; }
+    if (!String(l.msg || '').trim()) { out.refused.push({ n: l.n, code: 'empty', reason: 'no text' }); return false; }
     return true;
   });
   log(`fila: ${fila.length} de ${leads.length} leads · identidade ${identity} · teto ${journal.countToday(identity)}/${cap}${dry ? ' · ENSAIO' : ''}`);
   if (!fila.length) { out.stopped = 'nada a enviar'; return out; }
 
-  // 4. abre e confere a sessão
+  // 4. open it and check the session
   const browser = await open({ identity, baseDir: join(ROOT, '.roger') });
   out.opened = true;
   const breaker = createBreaker(3);
   try {
     if (await loggedOut(browser.page)) {
-      out.stopped = `a sessão de ${identity} expirou — abra o navegador e entre à mão antes de rodar de novo`;
+      out.stopped = `the session for ${identity} expired — open the browser and log in by hand before running again`;
       return out;
     }
 
-    // 5. lead a lead
+    // 5. lead by lead
     for (const lead of fila) {
-      if (journal.capReached(identity, cap)) { out.stopped = 'teto atingido no meio da rodada'; break; }
+      if (journal.capReached(identity, cap)) { out.stopped = 'cap reached mid-run'; break; }
 
       let snap;
       try {
@@ -106,7 +106,7 @@ export async function runSendArm(queue, opts = {}) {
         snap = await snapshot(browser.page);
       } catch (e) {
         out.refused.push({ n: lead.n, code: 'page-error', reason: e.message });
-        if (breaker.fail()) { out.stopped = 'três falhas seguidas — encerrando antes de gastar a fila'; break; }
+        if (breaker.fail()) { out.stopped = 'three failures in a row — stopping before burning the queue'; break; }
         continue;
       }
 
@@ -119,36 +119,36 @@ export async function runSendArm(queue, opts = {}) {
       if (!verdict.ok) {
         out.refused.push({ n: lead.n, code: verdict.code, reason: verdict.reason });
         log(`  #${lead.n} ${lead.co || ''}: ${verdict.code} — ${verdict.reason}`);
-        // Sinal da plataforma encerra a rodada inteira. Ninguém tenta resolver isso.
+        // A platform signal ends the whole run. Nobody tries to work around that.
         if (verdict.code === 'blocked') { out.stopped = verdict.reason; break; }
         breaker.ok();
         continue;
       }
 
       if (dry) {
-        log(`  #${lead.n} ${lead.co || ''}: passaria em todos os portões (ensaio, nada enviado)`);
+        log(`  #${lead.n} ${lead.co || ''}: would pass every gate (rehearsal, nothing sent)`);
         out.refused.push({ n: lead.n, code: 'dry', reason: 'ensaio' });
         continue;
       }
 
-      // a marca ANTES do ato irreversível
+      // the mark BEFORE the irreversible act
       const id = journal.declare({ identity, leadId: lead.leadId, step: lead.stage, text: lead.msg, meta: { n: lead.n, co: lead.co } });
 
       let result;
       try {
         result = await typeAndSend(browser.page, lead.msg, { rand });
       } catch (e) {
-        journal.close(id, UNCERTAIN, { why: `exceção durante o envio: ${e.message}` });
+        journal.close(id, UNCERTAIN, { why: `exception while sending: ${e.message}` });
         out.refused.push({ n: lead.n, code: 'send-error', reason: e.message });
-        if (breaker.fail()) { out.stopped = 'três falhas seguidas — encerrando'; break; }
+        if (breaker.fail()) { out.stopped = 'three failures in a row — stopping'; break; }
         continue;
       }
 
       if (result.phase === 'pre-click') {
-        // Com certeza nada saiu: pode fechar a intenção sem dúvida.
+        // Nothing went out, for certain: the intent can be closed without doubt.
         journal.close(id, 'resolved', { why: result.why || 'nada saiu' });
         out.refused.push({ n: lead.n, code: 'not-sent', reason: result.why || 'nada saiu' });
-        if (breaker.fail()) { out.stopped = 'três falhas seguidas — encerrando'; break; }
+        if (breaker.fail()) { out.stopped = 'three failures in a row — stopping'; break; }
         continue;
       }
 
@@ -158,10 +158,10 @@ export async function runSendArm(queue, opts = {}) {
         breaker.ok();
         log(`  #${lead.n} ${lead.co || ''}: enviada e confirmada`);
       } else {
-        // Clicou e não confirmou: a dúvida FICA pendente para a rodada seguinte.
-        journal.close(id, UNCERTAIN, { why: result.why || 'sem confirmação' });
+        // Clicked and unconfirmed: the doubt STAYS pending for the next run.
+        journal.close(id, UNCERTAIN, { why: result.why || 'no confirmation' });
         out.sent += 1; // pode ter saído: conta para o teto
-        log(`  #${lead.n} ${lead.co || ''}: cliquei e não confirmei — fica pendente`);
+        log(`  #${lead.n} ${lead.co || ''}: clicked and did not confirm — left pending`);
       }
 
       await sleep(pauseMs(rand, opts.pause || DEFAULT_PAUSE));
@@ -173,12 +173,12 @@ export async function runSendArm(queue, opts = {}) {
   return out;
 }
 
-// ── fila: arquivo local ou o /approved do painel ──────────────────────────────
+// ── the queue: a local file, or the panel's /approved ─────────────────────────
 export async function loadQueue(source, fetchImpl = globalThis.fetch) {
-  if (!source) throw new Error('informe --queue <arquivo.json | http://127.0.0.1:4242/approved>');
+  if (!source) throw new Error('pass --queue <file.json | http://127.0.0.1:4242/approved>');
   if (/^https?:\/\//.test(source)) {
     const res = await fetchImpl(source);
-    if (!res.ok) throw new Error(`fila HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`queue HTTP ${res.status}`);
     return res.json();
   }
   return JSON.parse(readFileSync(source, 'utf8'));

@@ -1,36 +1,36 @@
 #!/usr/bin/env node
-// score.mjs — scoring de calor B2B². Funções puras: recebem um `lead` e classificam.
+// score.mjs — scoring how warm a lead is. Pure functions: they take a `lead` and classify it.
 //
-// O QUE MUDOU EM 12/09: o ICP saiu do código. Geografias, não-ICP, segmentos, números
-// (headcount, piso de budget, limiares de gap e timing) e os nomes dos sinais são LIDOS
-// do `icp.md` do context pack ativo, nas tabelas marcadas `.M`. Antes eram constantes
-// aqui dentro — o que tornava o motor de uma empresa só, apesar de o comentário no topo
-// dizer que o arquivo "codifica o ICP de icp.md". Agora codifica de verdade.
+// WHAT CHANGED: the ICP left the code. Geographies, out-of-market flags, segments, numbers
+// (headcount, budget floor, gap and timing thresholds) and the names of the signals are all
+// READ from the `icp.md` of the active context pack, in the tables marked `.M`. They used to
+// be constants in here — which made the engine serve one company only, even though the
+// comment at the top claimed the file "encodes the ICP from icp.md". Now it really does.
 //
-// As constantes viraram FALLBACK: pack sem as tabelas continua funcionando igual, e
-// `loadIcp().missing` diz o que não foi encontrado.
+// The constants became a FALLBACK: a pack without those tables still works exactly the same,
+// and `loadIcp().missing` says what was not found.
 //
-// Sem deps externas. ESM.
+// No external deps. ESM.
 //
-// Shape esperado do lead (campos ausentes tratados como desconhecidos):
+// The lead shape it expects (missing fields are treated as unknown):
 // {
 //   name, company,
-//   b2b2: bool,                 // vende pra empresa (não consumo de massa)?
+//   b2b2: bool,                 // sells to businesses (not mass consumers)?
 //   headcount: number,
-//   web3PostMVP: bool,          // produto live ou launch <=90d
-//   web2Firm: bool,             // investment firm / family office qualificada (3.2.1)
+//   web3PostMVP: bool,          // product live, or launching within 90 days
+//   web2Firm: bool,             // a qualified investment firm / family office (3.2.1)
 //   geo: string,
-//   decisorAcessivel: bool,
-//   budgetProvavel: number,     // USD/mês estimado
-//   segment: string,            // um slug de 3.3.M
-//   nonIcpFlags: [string],      // slugs de 3.6.M
+//   decisorAcessivel: bool,     // is there a reachable decision maker
+//   budgetProvavel: number,     // estimated USD per month
+//   segment: string,            // a slug from 3.3.M
+//   nonIcpFlags: [string],      // slugs from 3.6.M
 //   expansaoParaMercadoAlvo: bool,
-//   ...sinais de gap (3.11.M) e de timing (3.7.M) como booleanos
+//   ...gap (3.11.M) and timing (3.7.M) signals, as booleans
 // }
 
 import { readContextFile, parseTable, parseKeyValueTable, splitList, contextDir } from './lib/md.mjs';
 
-// ── FALLBACK: espelha o que estava hardcoded até 11/09 ────────────────────────
+// ── FALLBACK: mirrors what used to be hardcoded ───────────────────────────────
 const FALLBACK = {
   numbers: {
     headcount_min: 1,
@@ -40,7 +40,7 @@ const FALLBACK = {
     gap_material_min: 2,
     timing_forte_min: 1,
   },
-  // Sem tabela no icp.md, nenhuma geografia é recusada: recusar em silencio seria pior.
+  // With no table in icp.md, no geography is refused: refusing in silence would be worse.
   geoAccept: [],
   geoDiscard: [],
   nonIcp: [],
@@ -56,9 +56,9 @@ function norm(s) {
   return (s == null ? '' : String(s)).trim().toLowerCase();
 }
 
-// Número do .md com rede de segurança: célula vazia, texto ("muitos") ou lixo volta ao
-// default. Sem o teste de formato, `Number('')` é 0 — e um 0 silencioso viraria um gate
-// que aceita qualquer coisa.
+// A number from the .md with a safety net: an empty cell, text ("lots") or junk falls back
+// to the default. Without the format check, `Number('')` is 0 — and a silent 0 would become
+// a gate that accepts anything.
 function intOr(value, dflt) {
   const raw = String(value ?? '').trim();
   if (!raw) return dflt;
@@ -68,12 +68,12 @@ function intOr(value, dflt) {
   return Number.isFinite(n) ? n : dflt;
 }
 
-// ── carregamento do ICP ───────────────────────────────────────────────────────
+// ── loading the ICP ───────────────────────────────────────────────────────────
 const cache = new Map();
 
-// loadIcp({ text })     → parseia este texto (usado pelos testes, sem tocar disco)
-// loadIcp({ packDir })  → lê o icp.md daquele pack
-// loadIcp()             → lê o pack do contexto ativo, com memo
+// loadIcp({ text })     → parses this text (used by the tests, without touching disk)
+// loadIcp({ packDir })  → reads the icp.md of that pack
+// loadIcp()             → reads the pack of the active context, memoised
 export function loadIcp(opts = {}) {
   if (opts.text === undefined) {
     const key = contextDir(opts);
@@ -167,38 +167,38 @@ export function icpGate(lead, icp = loadIcp()) {
   const l = lead || {};
   const n = icp.numbers;
 
-  // não-ICP explícito (3.6) = descarte imediato
+  // explicitly out of market (3.6) = immediate discard
   const flags = (l.nonIcpFlags || []).map(norm);
   const hitNonIcp = flags.find((f) => icp.nonIcp.has(f));
   if (hitNonIcp) return { pass: false, reason: `not our market (3.6): ${hitNonIcp}` };
 
-  // B2B² (exclui consumo de massa)
+  // B2B² (excludes mass consumer)
   if (l.b2b2 === false) return { pass: false, reason: 'not B2B² (sells to mass consumers)' };
 
-  // headcount dentro da faixa
+  // headcount within the range
   if (typeof l.headcount === 'number' && (l.headcount < n.headcount_min || l.headcount > n.headcount_max)) {
     return { pass: false, reason: `headcount ${l.headcount} is outside ${n.headcount_min}-${n.headcount_max}` };
   }
 
-  // Portão de estágio: OPCIONAL, e desligado por padrão. Ele é herança do primeiro
-  // contexto que esta engine atendeu, onde "produto ao vivo" era hard-gate. Para a
-  // maioria dos negócios isso não existe, e ligado por padrão ele descartava todo lead
-  // vindo de planilha. Ligue com `stage_gate | 1` na tabela 3.2.M do seu icp.md.
+  // Stage gate: OPTIONAL, and off by default. It is inherited from the first context this
+  // engine served, where "product is live" was a hard gate. For most businesses that does
+  // not exist, and left on by default it discarded every lead coming from a spreadsheet.
+  // Turn it on with `stage_gate | 1` in table 3.2.M of your icp.md.
   if (n.stage_gate && l.web3PostMVP !== true && l.web2Firm !== true) {
     return { pass: false, reason: 'no valid stage (your icp.md requires a live product or a qualified round)' };
   }
 
-  // geografia (3.4)
+  // geography (3.4)
   const geo = norm(l.geo);
   if (geo && icp.geoDiscard.has(geo)) return { pass: false, reason: `geografia de descarte: ${l.geo}` };
   if (geo && icp.geoAccept.size && !icp.geoAccept.has(geo) && !l.expansaoParaMercadoAlvo) {
     return { pass: false, reason: `geography not accepted: ${l.geo}` };
   }
 
-  // decisor acessível
+  // a reachable decision maker
   if (l.decisorAcessivel === false) return { pass: false, reason: 'no reachable decision maker' };
 
-  // budget provável acima do piso
+  // likely budget above the floor
   if (typeof l.budgetProvavel === 'number' && l.budgetProvavel < n.budget_floor_usd_month) {
     return { pass: false, reason: `likely budget $${l.budgetProvavel} is below the floor of $${n.budget_floor_usd_month}` };
   }
@@ -247,4 +247,4 @@ export function classify(lead, icp = loadIcp()) {
   };
 }
 
-// Testes em score.test.mjs (rodar: node --test score.test.mjs).
+// Tests in score.test.mjs (run: node --test score.test.mjs).

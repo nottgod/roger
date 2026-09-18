@@ -44,28 +44,28 @@ function fakeBrowser(snapshots, sendResults = {}) {
   };
 }
 
-const bom = { url: 'https://linkedin.com/messaging/thread/1', bannerText: '', hasMessageChannel: true, isInMailComposer: false, recipientName: 'Ana Ribeiro', bubbles: [] };
-const bomPara = (nome) => ({ ...bom, recipientName: nome });
+const good = { url: 'https://linkedin.com/messaging/thread/1', bannerText: '', hasMessageChannel: true, isInMailComposer: false, recipientName: 'Ana Ribeiro', bubbles: [] };
+const bomPara = (nome) => ({ ...good, recipientName: nome });
 
-test('sem identidade não roda, e nem abre navegador', async () => {
-  const b = fakeBrowser(bom);
+test('with no identity it does not run, and does not open a browser', async () => {
+  const b = fakeBrowser(good);
   const r = await runSendArm(QUEUE, { journal: journalIn(dir()), deps: b.deps });
-  assert.match(r.stopped, /sem identidade/);
+  assert.match(r.stopped, /no identity/);
   assert.equal(r.opened, false);
 });
 
-test('teto do dia impede ABRIR o navegador', async () => {
+test('the daily cap prevents OPENING the browser', async () => {
   const d = dir();
   const j = journalIn(d);
   for (let i = 0; i < 3; i += 1) j.declare({ identity: 'sam', leadId: i, step: 'FUP_1', text: 'x' });
-  const b = fakeBrowser(bom);
+  const b = fakeBrowser(good);
   const r = await runSendArm(QUEUE, { identity: 'sam', cap: 3, journal: j, deps: b.deps });
-  assert.match(r.stopped, /teto do dia atingido/);
+  assert.match(r.stopped, /daily cap reached/);
   assert.equal(r.opened, false, 'teto estourado não gasta nem um request');
   assert.deepEqual(b.typed, []);
 });
 
-test('o caminho feliz envia, confirma e fecha a intenção', async () => {
+test('the happy path sends, confirms and closes the intent', async () => {
   const d = dir();
   const j = journalIn(d);
   const b = fakeBrowser([bomPara('Ana Ribeiro'), bomPara('Sam Okafor')]);
@@ -76,14 +76,14 @@ test('o caminho feliz envia, confirma e fecha a intenção', async () => {
   assert.equal(j.countToday('sam'), 2);
 });
 
-test('a intenção é declarada ANTES de digitar', async () => {
+test('the intent is declared BEFORE typing', async () => {
   const d = dir();
   const j = journalIn(d);
   const ordem = [];
   const deps = {
     openBrowser: async () => ({ page: {}, context: { close: async () => {} } }),
     sessionLooksLoggedOut: async () => false,
-    snapshot: async () => bom,
+    snapshot: async () => good,
     typeAndSend: async () => { ordem.push('digitou'); return { phase: 'post-click', confirmed: true }; },
     sleep: async () => {}, rand: () => 0.5, log: () => {},
   };
@@ -92,26 +92,26 @@ test('a intenção é declarada ANTES de digitar', async () => {
   assert.deepEqual(ordem, ['declarou', 'digitou']);
 });
 
-test('clicou e não confirmou: fica PENDENTE e conta para o teto', async () => {
+test('clicked and unconfirmed: it stays PENDING and counts towards the cap', async () => {
   const d = dir();
   const j = journalIn(d);
-  const b = fakeBrowser(bom, { 1: { phase: 'post-click', confirmed: false, why: 'bolha não apareceu' } });
+  const b = fakeBrowser(good, { 1: { phase: 'post-click', confirmed: false, why: 'bolha não apareceu' } });
   const r = await runSendArm({ leads: [QUEUE.leads[0]] }, { identity: 'sam', journal: j, deps: b.deps });
   assert.equal(r.sent, 1, 'pode ter saído: conta');
   assert.equal(j.pending().length, 1, 'a dúvida sobrevive à rodada');
 });
 
-test('pre-click fecha a intenção sem dúvida: nada saiu', async () => {
+test('pre-click closes the intent with no doubt: nothing went out', async () => {
   const d = dir();
   const j = journalIn(d);
-  const b = fakeBrowser(bom, { 1: { phase: 'pre-click', confirmed: false, why: 'botão de envio indisponível' } });
+  const b = fakeBrowser(good, { 1: { phase: 'pre-click', confirmed: false, why: 'botão de envio indisponível' } });
   const r = await runSendArm({ leads: [QUEUE.leads[0]] }, { identity: 'sam', journal: j, deps: b.deps });
   assert.equal(r.sent, 0);
   assert.deepEqual(j.pending(), []);
   assert.equal(r.refused[0].code, 'not-sent');
 });
 
-test('lead com pendência anterior sai da fila', async () => {
+test('a lead with an earlier pending intent leaves the queue', async () => {
   const d = dir();
   const j = journalIn(d);
   j.declare({ identity: 'sam', leadId: 101, step: 'FUP_2', text: 'toque anterior' });
@@ -121,7 +121,7 @@ test('lead com pendência anterior sai da fila', async () => {
   assert.equal(b.typed.length, 1, 'só o lead 102 é tocado');
 });
 
-test('destinatário errado não recebe nada', async () => {
+test('the wrong recipient receives nothing', async () => {
   const d = dir();
   const b = fakeBrowser(bomPara('Outra Pessoa'));
   const r = await runSendArm({ leads: [QUEUE.leads[0]] }, { identity: 'sam', journal: journalIn(d), deps: b.deps });
@@ -130,19 +130,19 @@ test('destinatário errado não recebe nada', async () => {
   assert.deepEqual(b.typed, [], 'não digitou uma letra');
 });
 
-test('sinal de bloqueio encerra a rodada inteira, sem tentar o próximo', async () => {
+test('a block signal ends the whole run, without trying the next one', async () => {
   const d = dir();
-  const b = fakeBrowser({ ...bom, url: 'https://www.linkedin.com/checkpoint/challenge' });
+  const b = fakeBrowser({ ...good, url: 'https://www.linkedin.com/checkpoint/challenge' });
   const r = await runSendArm(QUEUE, { identity: 'sam', journal: journalIn(d), deps: b.deps });
-  assert.match(r.stopped, /bloqueio/);
+  assert.match(r.stopped, /block/);
   assert.equal(b.typed.length, 0);
   assert.equal(r.refused.length, 1, 'parou no primeiro, não varreu a fila');
 });
 
-test('ensaio não digita nada, mas diz quem passaria', async () => {
+test('a rehearsal types nothing, but says who would pass', async () => {
   const d = dir();
   const j = journalIn(d);
-  const b = fakeBrowser(bom);
+  const b = fakeBrowser(good);
   const r = await runSendArm({ leads: [QUEUE.leads[0]] }, { identity: 'sam', dry: true, journal: j, deps: b.deps });
   assert.equal(r.sent, 0);
   assert.deepEqual(b.typed, []);
@@ -150,15 +150,15 @@ test('ensaio não digita nada, mas diz quem passaria', async () => {
   assert.deepEqual(j.pending(), [], 'ensaio não declara intenção');
 });
 
-test('sessão expirada encerra com instrução, sem enviar', async () => {
+test('an expired session stops with an instruction, without sending', async () => {
   const d = dir();
-  const deps = { ...fakeBrowser(bom).deps, sessionLooksLoggedOut: async () => true };
+  const deps = { ...fakeBrowser(good).deps, sessionLooksLoggedOut: async () => true };
   const r = await runSendArm(QUEUE, { identity: 'sam', journal: journalIn(d), deps });
-  assert.match(r.stopped, /sessão de sam expirou/);
+  assert.match(r.stopped, /session for sam expired/);
   assert.equal(r.sent, 0);
 });
 
-test('três falhas seguidas de página encerram a rodada', async () => {
+test('three page failures in a row end the run', async () => {
   const d = dir();
   const leads = [1, 2, 3, 4].map((n) => ({ n, co: `C${n}`, who: 'Ana Ribeiro', leadId: 100 + n, stage: 'FUP_1', msg: 'oi' }));
   const deps = {
@@ -169,45 +169,45 @@ test('três falhas seguidas de página encerram a rodada', async () => {
     sleep: async () => {}, rand: () => 0.5, log: () => {},
   };
   const r = await runSendArm({ leads }, { identity: 'sam', journal: journalIn(d), deps });
-  assert.match(r.stopped, /três falhas seguidas/);
+  assert.match(r.stopped, /three failures in a row/);
   assert.equal(r.refused.length, 3, 'não gastou a fila inteira produzindo o mesmo erro');
 });
 
-test('lead sem texto é recusado antes de qualquer navegação', async () => {
+test('a lead with no text is refused before any navigation', async () => {
   const d = dir();
-  const b = fakeBrowser(bom);
+  const b = fakeBrowser(good);
   const r = await runSendArm({ leads: [{ n: 9, leadId: 9, msg: '   ' }] }, { identity: 'sam', journal: journalIn(d), deps: b.deps });
   assert.equal(r.refused[0].code, 'empty');
   assert.equal(r.opened, false);
   assert.equal(r.stopped, 'nada a enviar');
 });
 
-test('teto atingido no meio da rodada para na hora', async () => {
+test('a cap reached mid-run stops immediately', async () => {
   const d = dir();
   const j = journalIn(d);
   const leads = [1, 2, 3].map((n) => ({ n, co: `C${n}`, who: 'Ana Ribeiro', leadId: 100 + n, stage: 'FUP_1', msg: 'oi ' + n }));
-  const b = fakeBrowser(bom);
+  const b = fakeBrowser(good);
   const r = await runSendArm({ leads }, { identity: 'sam', cap: 2, journal: j, deps: b.deps });
   assert.equal(r.sent, 2);
-  assert.match(r.stopped, /teto atingido no meio/);
+  assert.match(r.stopped, /cap reached mid-run/);
 });
 
 // ── fila ──────────────────────────────────────────────────────────────────────
-test('a fila pode vir do /approved do painel', async () => {
+test('the queue can come from the panel /approved', async () => {
   const fetchFalso = async () => ({ ok: true, status: 200, json: async () => QUEUE });
   const q = await loadQueue('http://127.0.0.1:4242/approved', fetchFalso);
   assert.equal(q.leads.length, 2);
 });
 
-test('fila HTTP com erro é explicada', async () => {
+test('an HTTP queue error is explained', async () => {
   const fetchFalso = async () => ({ ok: false, status: 503, json: async () => ({}) });
-  await assert.rejects(() => loadQueue('http://127.0.0.1:4242/approved', fetchFalso), /fila HTTP 503/);
+  await assert.rejects(() => loadQueue('http://127.0.0.1:4242/approved', fetchFalso), /queue HTTP 503/);
 });
 
-test('sem --queue, erro que diz o que fazer', async () => {
-  await assert.rejects(() => loadQueue(null), /informe --queue/);
+test('with no --queue, an error that says what to do', async () => {
+  await assert.rejects(() => loadQueue(null), /pass --queue/);
 });
 
-test('o teto padrão é conservador', () => {
+test('the default cap is conservative', () => {
   assert.ok(DEFAULT_CAP <= 50, `teto padrão ${DEFAULT_CAP} alto demais para conta de amigo`);
 });
