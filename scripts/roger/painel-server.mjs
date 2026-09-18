@@ -37,6 +37,7 @@ import {
   createState, applyAction, sendable, counters, entryFor, finalText,
   assertOwned, nextStepFor, escapeHtml,
 } from './lib/panel-core.mjs';
+import { TOKENS, BRAND_BAR } from './lib/theme.mjs';
 
 const DRY = process.env.DRY === '1';
 const PORT = parseInt(process.env.PORT || '4242', 10);
@@ -65,7 +66,7 @@ function batchDaPlanilha(caminho) {
   if (!leads.length) { console.error('nenhum lead legível nesse arquivo'); process.exit(1); }
   return {
     date: new Date().toISOString().slice(0, 10),
-    title: `${leads.length} leads de ${caminho.split('/').pop()}`,
+    title: `${leads.length} leads from ${caminho.split("/").pop()}`,
     // msg vazia de propósito: você cola a mensagem que o seu modelo escreveu, aqui na tela.
     leads: leads.map((l, i) => ({
       n: i + 1,
@@ -206,60 +207,72 @@ async function markReplied(item) {
 
 function html() {
   const payload = JSON.stringify(batch.leads).replace(/</g, '\\u003c');
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(batch.title || 'Painel roger')} — ${escapeHtml(batch.date)}</title>
+<title>${escapeHtml(batch.title || 'roger panel')} — ${escapeHtml(batch.date)}</title>
 <style>
-:root{--bg:#0f1115;--card:#1a1d24;--card2:#21252e;--line:#2c313c;--txt:#e6e8ec;--mut:#8b93a1;--acc:#4f9dff;--ok:#3ecf8e;--skip:#f0a92b;--fraco:#c678dd;--rep:#e06c75}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-header{position:sticky;top:0;z-index:10;background:rgba(15,17,21,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 20px}
-header h1{margin:0 0 8px;font-size:16px;font-weight:600}
-.dry{display:inline-block;background:rgba(240,169,43,.18);color:var(--skip);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:8px}
-.stats{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px}
-.stats b{font-size:18px;font-weight:700}
-.s-app b{color:var(--acc)}.s-sent b{color:var(--ok)}.s-rej b{color:var(--rep)}.s-left b{color:var(--mut)}
-.bar{flex:1;min-width:160px;height:8px;background:var(--line);border-radius:6px;overflow:hidden}
-.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--acc));transition:width .25s}
-.note{max-width:860px;margin:14px auto 0;padding:0 20px;color:var(--mut);font-size:13px}
+${TOKENS}
+${BRAND_BAR}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--text);font:15px/1.6 var(--font-body)}
+header{position:sticky;top:0;z-index:10;background:rgba(10,9,18,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:16px 20px}
+header h1{margin:0 0 10px;font-family:var(--font-mono);font-size:15px;font-weight:500;letter-spacing:-.01em}
+header h1 .dot{color:var(--red)}
+.dry{display:inline-block;background:rgba(242,88,42,.16);color:var(--warn);font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;padding:3px 9px;border-radius:20px;margin-left:8px}
+.stats{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.stats b{font-size:17px;font-weight:500}
+.s-app b{color:var(--pending)}.s-sent b{color:var(--ok)}.s-rej b{color:var(--stop)}.s-left b{color:var(--muted)}
+.bar{flex:1;min-width:160px;height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--rainbow);transition:width .25s}
+.note{max-width:860px;margin:16px auto 0;padding:0 20px;color:var(--muted);font-size:13.5px}
 main{max-width:860px;margin:10px auto 60px;padding:0 20px}
-.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
-.card.approved{border-left-color:var(--acc)}.card.sent{border-left-color:var(--ok);opacity:.55}
-.card.rejected{border-left-color:var(--rep);opacity:.6}.card.replied{border-left-color:var(--rep);opacity:.6}
-.card.skipped{border-left-color:var(--skip);opacity:.6}.card.fraco{border-left-color:var(--fraco)}
+.card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;margin:14px 0}
+.card.approved{border-left-color:var(--pending)}.card.sent{border-left-color:var(--ok);opacity:.55}
+.card.rejected{border-left-color:var(--stop);opacity:.6}.card.replied{border-left-color:var(--stop);opacity:.6}
+.card.skipped{border-left-color:var(--warn);opacity:.6}.card.fraco{border-left-color:var(--weak)}
 .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.num{font-weight:700;color:var(--mut)}.co{font-weight:600;font-size:16px}.who{color:var(--mut);font-size:13px}
-.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
-.b-fraco{background:rgba(198,120,221,.16);color:var(--fraco)}.b-hot{background:rgba(62,207,142,.16);color:var(--ok)}.b-stage{background:rgba(139,147,161,.16);color:var(--mut)}
-.prof{display:inline-block;margin:10px 12px 8px 0;color:var(--acc);text-decoration:none;font-size:13px;font-weight:600}.prof:hover{text-decoration:underline}
-textarea{width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:11px 12px;font:14px/1.55 inherit;resize:vertical;min-height:96px}
-textarea:focus{outline:none;border-color:var(--acc)}
-.dirty{color:var(--skip);font-size:12px;margin-top:6px;display:none}
-.actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
-button.act{border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
-.copy{background:var(--card2);color:var(--txt);border:1px solid var(--line)!important}.copy:hover{border-color:var(--acc)!important;color:var(--acc)}.copy.done{background:var(--acc);color:#04101f}
-.app-btn{background:var(--acc);color:#04101f}.sent-btn{background:var(--ok);color:#042b1c}
-.rej-btn{background:transparent;color:var(--rep);border:1px solid var(--rep)!important}
-.rep-btn{background:transparent;color:var(--rep);border:1px solid var(--rep)!important}
-.skip-btn{background:transparent;color:var(--skip);border:1px solid var(--skip)!important}
-.undo{background:transparent;color:var(--mut);border:1px solid var(--line)!important;font-weight:500}
-.reason{margin-top:8px;width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:13px inherit}
-.kommo{margin-top:8px;font-size:12px;color:var(--mut);white-space:pre-line}
-.kommo.err{color:var(--rep)}
-.state-tag{font-size:12px;font-weight:700;margin-left:auto}
-.t-app{color:var(--acc)}.t-sent{color:var(--ok)}.t-rej{color:var(--rep)}.t-skip{color:var(--skip)}
+.num{font-family:var(--font-mono);font-size:13px;color:var(--muted)}
+.co{font-weight:600;font-size:16px}.who{color:var(--muted);font-size:13px}
+.badge{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;padding:3px 9px;border-radius:20px}
+.b-fraco{background:rgba(233,60,176,.16);color:var(--weak)}
+.b-hot{background:rgba(40,200,64,.16);color:var(--ok)}
+.b-stage{background:rgba(168,159,174,.14);color:var(--muted)}
+.prof{display:inline-block;margin:10px 12px 8px 0;color:var(--text);text-decoration:none;font-family:var(--font-mono);font-size:12.5px;border-bottom:1px solid var(--line)}
+.prof:hover{border-bottom-color:var(--red)}
+textarea{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);padding:12px 13px;font:14px/1.6 var(--font-body);resize:vertical;min-height:96px}
+textarea:focus{outline:none;border-color:var(--muted)}
+.dirty{color:var(--warn);font-size:12px;margin-top:6px;display:none}
+.actions{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap}
+button.act{height:var(--ctl);border:none;border-radius:var(--radius);padding:0 16px;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.02em;cursor:pointer;transition:filter .15s ease,border-color .15s ease,color .15s ease}
+button.act:hover{filter:brightness(1.08)}
+button.act:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.copy{background:transparent;color:var(--muted);border:1px solid var(--line)!important}
+.copy:hover{color:var(--text);border-color:var(--muted)!important}
+.copy.done{background:var(--ok);color:#04220b;border-color:var(--ok)!important}
+.app-btn{background:var(--red);color:var(--text);box-shadow:0 0 20px rgba(255,36,66,.3)}
+.sent-btn{background:var(--ok);color:#04220b}
+.rej-btn,.rep-btn{background:transparent;color:var(--stop);border:1px solid var(--stop)!important}
+.skip-btn{background:transparent;color:var(--warn);border:1px solid var(--warn)!important}
+.undo{background:transparent;color:var(--muted);border:1px solid var(--line)!important}
+.reason{margin-top:10px;width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);padding:9px 11px;font:13px var(--font-body)}
+.reason:focus{outline:none;border-color:var(--muted)}
+.kommo{margin-top:8px;font-family:var(--font-mono);font-size:12px;color:var(--muted);white-space:pre-line}
+.kommo.err{color:var(--stop)}
+.state-tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;margin-left:auto}
+.t-app{color:var(--pending)}.t-sent{color:var(--ok)}.t-rej{color:var(--stop)}.t-skip{color:var(--warn)}
 .spin{opacity:.5;pointer-events:none}
 </style></head><body>
 <header>
-  <h1>${escapeHtml(batch.title || 'Painel roger')} · ${escapeHtml(batch.date)} · ${batch.leads.length} contatos${DRY ? '<span class="dry">DRY-RUN — não escreve no Kommo</span>' : ''}</h1>
+  <h1>${escapeHtml(batch.title || 'roger panel')} · ${escapeHtml(batch.date)} · ${batch.leads.length} contacts${DRY ? '<span class="dry">DRY RUN — nothing is written to the CRM</span>' : ''}</h1>
   <div class="stats">
-    <span class="s-app">aprovadas <b id="cApp">0</b></span>
-    <span class="s-sent">enviadas <b id="cSent">0</b></span>
-    <span class="s-rej">recusadas <b id="cRej">0</b></span>
-    <span class="s-left">por ler <b id="cLeft">0</b></span>
+    <span class="s-app">approved <b id="cApp">0</b></span>
+    <span class="s-sent">sent <b id="cSent">0</b></span>
+    <span class="s-rej">declined <b id="cRej">0</b></span>
+    <span class="s-left">to read <b id="cLeft">0</b></span>
     <div class="bar"><i id="barFill"></i></div>
   </div>
 </header>
-<p class="note">Leia, <b>corrija o texto se precisar</b> e <b>Aprovar</b>. Nada é enviável antes disso, e mexer no texto depois de aprovar reabre a aprovação, porque o que você leu mudou. Depois de enviar (à mão ou pelo braço de envio), <b>✓ Enviada</b> fecha a task, grava a nota e cria a próxima FUP. Lead respondeu? <b>💬 Respondeu</b> fecha sem criar FUP.</p>
+<p class="note">Read it, <b>fix the text if you need to</b>, then <b>Approve</b>. Nothing is sendable before that, and editing the text after approving reopens the approval, because what you read changed. Once it has gone out (by hand or through the sending arm), <b>✓ Sent</b> closes the task, saves the note and creates the next follow-up. Did they reply? <b>💬 Replied</b> closes it without a follow-up.</p>
 <main id="list"></main>
 <script>
 const DATA = ${payload};
@@ -270,7 +283,7 @@ async function api(path, body){
   return r.json();
 }
 function copyText(txt, btn){
-  const done = ()=>{btn.classList.add('done');btn.textContent='copiado';setTimeout(()=>{btn.classList.remove('done');btn.textContent='Copiar';},1400);};
+  const done = ()=>{btn.classList.add('done');btn.textContent='copied';setTimeout(()=>{btn.classList.remove('done');btn.textContent='copy';},1400);};
   if(navigator.clipboard){navigator.clipboard.writeText(txt).then(done).catch(done);}else done();
 }
 async function act(n, action, card, extra){
@@ -302,29 +315,29 @@ function render(){
     card.className='card'+(d.fraco?' fraco':'')+(st&&st!=='pending'?(' '+st):'');
     const badges=(d.stage?'<span class="badge b-stage">'+esc(d.stage.replace('_',' '))+'</span>':'')
       +(d.score?'<span class="badge b-stage">'+esc(d.score)+'</span>':'')
-      +(d.hot?'<span class="badge b-hot">quente</span>':'')
-      +(d.fraco?'<span class="badge b-fraco">FRACO · pede decisor</span>':'');
-    const tag = st==='approved'?'<span class="state-tag t-app">APROVADA</span>'
-      : st==='sent'?'<span class="state-tag t-sent">ENVIADA</span>'
-      : st==='rejected'?'<span class="state-tag t-rej">RECUSADA</span>'
-      : st==='replied'?'<span class="state-tag t-rej">RESPONDEU</span>'
-      : st==='skipped'?'<span class="state-tag t-skip">PULADA</span>':'';
+      +(d.hot?'<span class="badge b-hot">hot</span>':'')
+      +(d.fraco?'<span class="badge b-fraco">WEAK · no decision maker</span>':'');
+    const tag = st==='approved'?'<span class="state-tag t-app">APPROVED</span>'
+      : st==='sent'?'<span class="state-tag t-sent">SENT</span>'
+      : st==='rejected'?'<span class="state-tag t-rej">DECLINED</span>'
+      : st==='replied'?'<span class="state-tag t-rej">REPLIED</span>'
+      : st==='skipped'?'<span class="state-tag t-skip">SKIPPED</span>':'';
     const kommoInfo = e.kommo ? '<div class="kommo'+(e.kommo.error?' err':'')+'">'+esc(e.kommo.error||e.kommo.steps.map(s=>'✓ '+s).join('\\n'))+'</div>' : '';
     const texto = (typeof e.text==='string' && e.text.trim()!=='') ? e.text : (d.msg||'');
 
     let botoes;
-    if(st==='sent'){ botoes = '<button class="act undo">desfazer registro local</button>'; }
-    else if(st==='approved'){ botoes = '<button class="act sent-btn">✓ Enviada</button><button class="act rej-btn">Recusar</button>'; }
-    else if(st==='rejected'||st==='skipped'||st==='replied'){ botoes = '<button class="act undo">reabrir</button>'; }
-    else { botoes = '<button class="act app-btn">Aprovar</button><button class="act rep-btn">💬 Respondeu</button><button class="act skip-btn">Pular</button>'; }
+    if(st==='sent'){ botoes = '<button class="act undo">undo local record</button>'; }
+    else if(st==='approved'){ botoes = '<button class="act sent-btn">✓ Sent</button><button class="act rej-btn">Decline</button>'; }
+    else if(st==='rejected'||st==='skipped'||st==='replied'){ botoes = '<button class="act undo">reopen</button>'; }
+    else { botoes = '<button class="act app-btn">Approve</button><button class="act rep-btn">💬 Replied</button><button class="act skip-btn">Skip</button>'; }
 
     card.innerHTML = '<div class="top"><span class="num">#'+d.n+'</span><span class="co">'+esc(d.co)+'</span><span class="who">'+esc(d.who||'')+'</span>'+badges+tag+'</div>'
-      +(d.url?'<a class="prof" href="'+esc(d.url)+'" target="_blank" rel="noopener">Abrir perfil ↗</a>':'')
+      +(d.url?'<a class="prof" href="'+esc(d.url)+'" target="_blank" rel="noopener">Open profile ↗</a>':'')
       +(d.note?'<div class="kommo">'+esc(d.note)+'</div>':'')
       +'<textarea rows="4" '+(st==='sent'?'readonly':'')+'>'+esc(texto)+'</textarea>'
-      +'<div class="dirty">texto mudou — ao aprovar, é esta versão que vale</div>'
-      +'<div class="actions"><button class="act copy">Copiar</button>'+botoes+'</div>'
-      +'<input class="reason" placeholder="motivo (recusa, pulo)" value="'+esc(e.reason||'')+'">'
+      +'<div class="dirty">text changed — approving takes this version</div>'
+      +'<div class="actions"><button class="act copy">copy</button>'+botoes+'</div>'
+      +'<input class="reason" placeholder="reason (declined, skipped)" value="'+esc(e.reason||'')+'">'
       +kommoInfo;
 
     const ta = card.querySelector('textarea');
@@ -424,13 +437,13 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  send(404, { error: 'rota desconhecida' });
+  send(404, { error: 'unknown route' });
 });
 
 server.listen(PORT, HOST, () => {
   const c = counters(batch, state);
-  console.log(`\nPainel roger no ar: http://${HOST}:${PORT}`);
-  console.log(`   batch: ${batchFile} (${c.total} contatos) · cadência: ${cadSource}${DRY ? ' · DRY-RUN' : ''}`);
-  console.log(`   aprovadas: ${c.approved} · enviadas: ${c.sent} · por ler: ${c.pending}`);
-  console.log(`   estado: ${STATE_FILE}\n   eventos: ${EVENTS_FILE}\n   Ctrl+C encerra.\n`);
+  console.log(`\nroger panel is up: http://${HOST}:${PORT}`);
+  console.log(`   batch: ${batchFile} (${c.total} contacts) · cadence: ${cadSource}${DRY ? ' · DRY RUN' : ''}`);
+  console.log(`   approved: ${c.approved} · sent: ${c.sent} · to read: ${c.pending}`);
+  console.log(`   state: ${STATE_FILE}\n   events: ${EVENTS_FILE}\n   Ctrl+C stops it.\n`);
 });
