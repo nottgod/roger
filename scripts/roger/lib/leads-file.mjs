@@ -1,24 +1,24 @@
-// leads-file.mjs — leads de uma PLANILHA, para quem não tem CRM.
+// leads-file.mjs — leads from a SPREADSHEET, for whoever has no CRM.
 //
-// Este é o caminho principal de quem está começando: exporta um CSV do lugar onde a
-// lista já vive (Notion, Airtable, Sheets, Apollo, um export do LinkedIn) e a Roger
-// trabalha em cima dele. Sem integração, sem token, sem pedir permissão a ninguém.
+// This is the main path when you are starting: export a CSV from wherever the list
+// already lives (Notion, Airtable, Sheets, Apollo, a LinkedIn export) and Roger works
+// on top of it. No integration, no token, no asking anyone for permission.
 //
-// Princípios:
-//   1. NUNCA lança. Linha ruim vira erro na lista e a rodada segue com as boas — porque
-//      uma célula errada não deveria matar uma lista de 200 leads.
-//   2. Aceita o cabeçalho que a pessoa já tem, em português ou inglês (FIELD_ALIASES).
-//      Ninguém deveria renomear colunas para agradar um script.
-//   3. Coerção generosa em cima de dado escrito por humano: "sim", "yes", "x", "6k",
-//      "$4,000". O que não der para entender vira aviso, não erro silencioso.
+// Principles:
+//   1. It NEVER throws. A bad row becomes an error in the list and the run continues
+//      with the good ones — one wrong cell should not kill a list of 200 leads.
+//   2. It accepts the header you already have, in English or Portuguese (FIELD_ALIASES).
+//      Nobody should rename columns to please a script.
+//   3. Generous coercion on top of text written by a human: "yes", "sim", "x", "6k",
+//      "$4,000". Whatever cannot be understood becomes a warning, not a silent error.
 //
-// ESM, sem deps.
+// ESM, no deps.
 
 import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 
-// Cada campo do lead e os nomes de coluna que a gente aceita para ele.
-// A chave é o campo canônico (o shape documentado no score.mjs).
+// Every lead field and the column names we accept for it.
+// The key is the canonical field (the shape documented in score.mjs).
 export const FIELD_ALIASES = {
   name: ['name', 'nome', 'full name', 'contact', 'contato', 'person', 'pessoa', 'lead'],
   company: ['company', 'empresa', 'organization', 'organização', 'organizacao', 'account', 'conta'],
@@ -46,8 +46,8 @@ const NUMBER_FIELDS = ['headcount', 'budgetProvavel'];
 
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 
-// "recent funding" · "recent_funding" · "Recent Funding" → recentFunding, que é como o
-// icp.md nomeia o sinal e como o score.mjs o procura no lead.
+// "recent funding" · "recent_funding" · "Recent Funding" → recentFunding, which is how
+// icp.md names the signal and how score.mjs looks for it on the lead.
 export function flagName(header) {
   const parts = String(header).trim().split(/[\s_-]+/).filter(Boolean);
   if (!parts.length) return '';
@@ -56,7 +56,7 @@ export function flagName(header) {
   return head + rest.map((w) => w[0].toUpperCase() + w.slice(1)).join('');
 }
 
-// Mapa alias → campo canônico, montado uma vez.
+// alias → canonical field map, built once.
 const ALIAS_TO_FIELD = new Map();
 for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
   for (const a of aliases) ALIAS_TO_FIELD.set(norm(a), field);
@@ -68,8 +68,8 @@ export function fieldForHeader(header) {
 }
 
 // ── CSV ───────────────────────────────────────────────────────────────────────
-// Parser próprio (em vez de split por vírgula) porque planilha de verdade tem vírgula
-// dentro de célula, aspas escapadas e quebra de linha no meio de um campo de texto.
+// A parser of our own (rather than splitting on commas) because a real spreadsheet has
+// commas inside cells, escaped quotes and line breaks in the middle of a text field.
 export function parseCsv(text) {
   const src = String(text ?? '').replace(/^﻿/, ''); // BOM do Excel
   const rows = [];
@@ -96,7 +96,7 @@ export function parseCsv(text) {
   return rows.filter((r) => r.some((c) => String(c).trim() !== ''));
 }
 
-// ── coerção ───────────────────────────────────────────────────────────────────
+// ── coercion ──────────────────────────────────────────────────────────────────
 export function coerceBoolean(value) {
   const v = norm(value);
   if (TRUE_WORDS.has(v)) return true;
@@ -104,7 +104,7 @@ export function coerceBoolean(value) {
   return undefined; // desconhecido é diferente de falso, e o gate trata assim
 }
 
-// "6k" → 6000 · "$4,000/mo" → 4000 · "12" → 12 · "umas 20" → 20 · "muitos" → undefined
+// "6k" → 6000 · "$4,000/mo" → 4000 · "12" → 12 · "about 20" → 20 · "lots" → undefined
 export function coerceNumber(value) {
   const raw = norm(value);
   if (!raw) return undefined;
@@ -117,7 +117,7 @@ export function coerceNumber(value) {
   return n;
 }
 
-// ── normalização de uma linha ─────────────────────────────────────────────────
+// ── normalising one row ───────────────────────────────────────────────────────
 export function normalizeLead(raw, index = 0) {
   const lead = {};
   const extra = {};
@@ -128,10 +128,10 @@ export function normalizeLead(raw, index = 0) {
     if (!field) {
       const key = String(header).trim();
       if (!key) continue;
-      // Os sinais de gap (3.11.M) e de timing (3.7.M) têm nome definido no SEU icp.md,
-      // então esta lista não pode conhecê-los de antemão. Regra: coluna desconhecida
-      // com valor de sim/não vira uma flag booleana com o nome dela. É assim que uma
-      // planilha consegue dizer "recentFunding: yes" sem ninguém editar código.
+      // The gap (3.11.M) and timing (3.7.M) signals are named in YOUR icp.md, so this
+      // list cannot know them in advance. The rule: an unknown column holding a yes/no
+      // value becomes a boolean flag under its own name. That is how a spreadsheet gets
+      // to say "recentFunding: yes" without anyone editing code.
       const flag = norm(value) ? coerceBoolean(value) : undefined;
       if (flag !== undefined) { lead[flagName(key)] = flag; continue; }
       extra[key] = value;
@@ -163,8 +163,8 @@ export function normalizeLead(raw, index = 0) {
   return { lead, warnings, error: null };
 }
 
-// ── entrada ───────────────────────────────────────────────────────────────────
-// readLeads({ text, format }) ou readLeadsFile(path). Devolve sempre a mesma forma:
+// ── input ─────────────────────────────────────────────────────────────────────
+// readLeads({ text, format }) or readLeadsFile(path). Always returns the same shape:
 // { leads, errors, warnings, source, columnsIgnored }
 export function readLeads({ text, format = 'csv' } = {}) {
   const errors = [];
@@ -221,7 +221,7 @@ export function readLeadsFile(path, opts = {}) {
   return { ...readLeads({ text, format }), path };
 }
 
-// Modelo de planilha para a pessoa começar, com as colunas que rendem mais.
+// A starter spreadsheet, with the columns that pay off the most.
 export const TEMPLATE_CSV = `name,company,role,linkedin,website,country,segment,headcount,budget,recentFunding,hiringForTheProblem,notes
 Ana Ribeiro,NorthPay,Head of Finance,https://linkedin.com/in/example,https://northpay.example,Singapore,payments,90,6k,no,yes,met at the payments meetup; closing books takes her team four days
 Sam Okafor,Truleaf,Head of Operations,https://linkedin.com/in/example2,https://truleaf.example,United States,marketplaces,140,4k,yes,yes,raised a seed round last month and is hiring a controller

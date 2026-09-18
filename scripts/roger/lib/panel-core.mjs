@@ -1,23 +1,23 @@
-// panel-core.mjs — a máquina de estados da APROVAÇÃO, pura e testável.
+// panel-core.mjs — the APPROVAL state machine, pure and testable.
 //
-// Por que este módulo existe: o painel antigo não tinha aprovação. O texto era
-// `readonly` e os botões só registravam, DEPOIS do fato, o que a pessoa já tinha
-// enviado à mão. Agora que existe um braço que envia sozinho, "aprovação" deixa de ser
-// um gesto e passa a ser um estado com invariante:
+// Why this module exists: the old panel had no approval. The text was `readonly` and the
+// buttons only recorded, AFTER the fact, what the person had already sent by hand. Now
+// that an arm can send on its own, "approval" stops being a gesture and becomes a state
+// with an invariant:
 //
-//   INVARIANTE: nada sai sem um humano ter aprovado. `sendable()` só devolve o que
-//   está em 'approved', e 'approved' só se alcança por uma ação humana explícita.
+//   INVARIANT: nothing goes out without a human having approved it. `sendable()` only
+//   returns what is in 'approved', and 'approved' is only reachable by an explicit human act.
 //
-// Tudo aqui é função pura: nenhuma rede, nenhum disco, nenhum Date.now() escondido
-// (o relógio entra por parâmetro). O servidor e o braço de envio consomem isto.
+// Everything here is a pure function: no network, no disk, no hidden Date.now() (the clock
+// comes in as a parameter). The server and the sending arm consume this.
 
-// ── estados ───────────────────────────────────────────────────────────────────
-// pending   nasceu assim, ninguém olhou
-// approved  humano leu, talvez editou, e liberou  → é o ÚNICO que pode ser enviado
-// rejected  humano leu e disse não
-// sent      saiu de verdade (o braço confirmou)
-// replied   o lead respondeu antes; a conversa é do humano, não se manda toque
-// skipped   pulado por um motivo operacional (sem botão de mensagem, InMail pago...)
+// ── states ────────────────────────────────────────────────────────────────────
+// pending   it was born this way, nobody looked
+// approved  a human read it, maybe edited it, and released it → the ONLY sendable state
+// rejected  a human read it and said no
+// sent      it really went out (the arm confirmed)
+// replied   the lead replied first; the conversation is the human's, no touch is sent
+// skipped   skipped for an operational reason (no message button, paid InMail...)
 export const STATUSES = ['pending', 'approved', 'rejected', 'sent', 'replied', 'skipped'];
 
 const TERMINAL = new Set(['sent']);
@@ -34,15 +34,15 @@ export function entryFor(state, n) {
   return state[n] || { status: 'pending', text: null, reason: null, history: [] };
 }
 
-// O texto que vale: o editado pelo humano, se houver; senão o gerado.
+// The text that counts: the one the human edited, if any; otherwise the generated one.
 export function finalText(lead, entry) {
   const edited = entry?.text;
   return (typeof edited === 'string' && edited.trim() !== '') ? edited : (lead?.msg || '');
 }
 
-// ── transições ────────────────────────────────────────────────────────────────
-// applyAction devolve SEMPRE { state, entry, error } e nunca lança. Ação ilegal não
-// muda nada e explica por quê — o servidor devolve isso para a tela.
+// ── transitions ───────────────────────────────────────────────────────────────
+// applyAction ALWAYS returns { state, entry, error } and never throws. An illegal action
+// changes nothing and explains why — the server hands that back to the screen.
 export function applyAction(state, lead, action, opts = {}) {
   const now = opts.now || new Date();
   const n = lead?.n;
@@ -66,7 +66,7 @@ export function applyAction(state, lead, action, opts = {}) {
     }
     case 'edit': {
       if (typeof opts.text !== 'string') return fail(`#${n}: edição sem texto`);
-      // Editar depois de aprovar REABRE a aprovação: o que o humano leu mudou.
+      // Editing after approving REOPENS the approval: what the human read changed.
       const status = prev.status === 'approved' ? 'pending' : prev.status;
       next = { ...prev, status, text: opts.text };
       break;
@@ -81,7 +81,7 @@ export function applyAction(state, lead, action, opts = {}) {
       next = { ...prev, status: 'replied', reason: opts.reason || null };
       break;
     case 'sent': {
-      // O portão. Só o que um humano aprovou pode ser marcado como enviado.
+      // The gate. Only what a human approved can be marked as sent.
       if (prev.status !== 'approved') {
         return fail(`#${n} não foi aprovada (está em "${prev.status}") — envio recusado`);
       }
@@ -103,8 +103,8 @@ export function applyAction(state, lead, action, opts = {}) {
   return { state: { ...state, [n]: next }, entry: next, error: null };
 }
 
-// ── o que pode ser enviado ────────────────────────────────────────────────────
-// A única porta para o braço de envio. Devolve o texto final já resolvido.
+// ── what can be sent ──────────────────────────────────────────────────────────
+// The only door to the sending arm. Returns the final text, already resolved.
 export function sendable(batch, state) {
   return (batch?.leads || [])
     .filter((lead) => entryFor(state, lead.n).status === 'approved')
@@ -118,9 +118,9 @@ export function counters(batch, state) {
   return out;
 }
 
-// ── guardas ───────────────────────────────────────────────────────────────────
-// Dono obrigatório, para task E para lead. O painel antigo checava só a task, então
-// a nota e o follow-up iam para o lead sem ninguém conferir de quem ele é.
+// ── guards ────────────────────────────────────────────────────────────────────
+// The owner is required, for the task AND for the lead. The old panel checked only the
+// task, so the note and the follow-up went to a lead nobody had checked the owner of.
 export function assertOwned(entity, ownerId, label = 'entidade') {
   if (ownerId == null) return { ok: false, error: 'sem dono declarado: recuso operar num CRM sem saber quais registros são seus' };
   if (!entity) return { ok: false, error: `${label} não encontrada` };
@@ -129,15 +129,15 @@ export function assertOwned(entity, ownerId, label = 'entidade') {
   return { ok: true, error: null };
 }
 
-// Próximo passo da cadência, respeitando o fim de sequência (`next: null`).
+// The next step in the cadence, respecting the end of the sequence (`next: null`).
 export function nextStepFor(stage, cadencia) {
   const step = cadencia?.[stage];
   if (!step || !step.next) return null;
   return step;
 }
 
-// Escape para interpolar em HTML sem abrir buraco. O painel antigo escapava só `<`
-// dentro de uma das interpolações; nome de empresa e cargo iam crus.
+// Escaping to interpolate into HTML without opening a hole. The old panel escaped only
+// `<` inside one of the interpolations; company name and role went in raw.
 export function escapeHtml(s) {
   return String(s ?? '')
     .replace(/&/g, '&amp;')

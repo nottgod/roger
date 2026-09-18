@@ -17,19 +17,19 @@ const lead = (n) => BATCH.leads.find((l) => l.n === n);
 const act = (state, n, action, opts) => applyAction(state, lead(n), action, opts);
 
 // ─── A INVARIANTE DO REPO ────────────────────────────────────────────────────
-test('nada é enviável antes de um humano aprovar', () => {
+test('nothing is sendable before a human approves', () => {
   const state = createState(BATCH);
   assert.deepEqual(sendable(BATCH, state), []);
 });
 
-test('marcar como enviada sem aprovação é RECUSADO', () => {
+test('marking as sent without approval is REFUSED', () => {
   const state = createState(BATCH);
   const r = act(state, 1, 'sent');
   assert.match(r.error, /não foi aprovada/);
   assert.equal(entryFor(r.state, 1).status, 'pending', 'o estado não muda');
 });
 
-test('aprovar libera só aquele lead, e o texto vai resolvido', () => {
+test('approving releases only that lead, and the text goes resolved', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve'));
   const fila = sendable(BATCH, state);
@@ -38,13 +38,13 @@ test('aprovar libera só aquele lead, e o texto vai resolvido', () => {
   assert.equal(fila[0].msg, 'saw the audit. how are the reruns going?');
 });
 
-test('o texto editado é o que vai, não o gerado', () => {
+test('the edited text is what goes, not the generated one', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve', { text: 'minha versão, melhor' }));
   assert.equal(sendable(BATCH, state)[0].msg, 'minha versão, melhor');
 });
 
-test('editar depois de aprovar REABRE a aprovação', () => {
+test('editing after approving REOPENS the approval', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve'));
   assert.equal(entryFor(state, 1).status, 'approved');
@@ -53,13 +53,13 @@ test('editar depois de aprovar REABRE a aprovação', () => {
   assert.deepEqual(sendable(BATCH, state), [], 'e nada é enviável nesse meio-tempo');
 });
 
-test('não se aprova mensagem vazia', () => {
+test('an empty message cannot be approved', () => {
   const state = createState(BATCH);
   const r = applyAction(state, { n: 9, msg: '' }, 'approve');
   assert.match(r.error, /sem texto/);
 });
 
-test('rejeitar tira da fila de envio', () => {
+test('rejecting removes it from the send queue', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve'));
   ({ state } = act(state, 1, 'reject', { reason: 'gancho fraco' }));
@@ -68,7 +68,7 @@ test('rejeitar tira da fila de envio', () => {
 });
 
 // ─── ciclo completo e estados terminais ──────────────────────────────────────
-test('o caminho feliz: pendente, aprovada, enviada', () => {
+test('the happy path: pending, approved, sent', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve'));
   ({ state } = act(state, 1, 'sent'));
@@ -76,7 +76,7 @@ test('o caminho feliz: pendente, aprovada, enviada', () => {
   assert.deepEqual(sendable(BATCH, state), [], 'enviada sai da fila');
 });
 
-test('mensagem enviada não aceita mais mudança', () => {
+test('a sent message accepts no further change', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve'));
   ({ state } = act(state, 1, 'sent'));
@@ -86,7 +86,7 @@ test('mensagem enviada não aceita mais mudança', () => {
   }
 });
 
-test('desfazer envio exige force, e diz que não desfaz o envio de verdade', () => {
+test('undoing a send requires force, and says it does not undo the real send', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve'));
   ({ state } = act(state, 1, 'sent'));
@@ -97,20 +97,20 @@ test('desfazer envio exige force, e diz que não desfaz o envio de verdade', () 
   assert.equal(entryFor(comForce.state, 1).status, 'pending');
 });
 
-test('lead que respondeu não entra na fila de envio', () => {
+test('a lead who replied does not enter the send queue', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 2, 'replied'));
   assert.deepEqual(sendable(BATCH, state), []);
 });
 
-test('ação desconhecida não muda nada', () => {
+test('an unknown action changes nothing', () => {
   const state = createState(BATCH);
   const r = act(state, 1, 'apagar-tudo');
   assert.match(r.error, /ação desconhecida/);
   assert.deepEqual(r.state, state);
 });
 
-test('cada transição fica no histórico, com hora', () => {
+test('every transition is kept in the history, with a timestamp', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve', { now: new Date('2026-09-12T10:00:00Z') }));
   ({ state } = act(state, 1, 'sent', { now: new Date('2026-09-12T10:01:00Z') }));
@@ -120,7 +120,7 @@ test('cada transição fica no histórico, com hora', () => {
   assert.equal(h[0].at, '2026-09-12T10:00:00.000Z');
 });
 
-test('contadores somam o total', () => {
+test('the counters add up to the total', () => {
   let { state } = { state: createState(BATCH) };
   ({ state } = act(state, 1, 'approve'));
   const c = counters(BATCH, state);
@@ -131,7 +131,7 @@ test('contadores somam o total', () => {
 });
 
 // ─── finalText ────────────────────────────────────────────────────────────────
-test('finalText prefere o editado, mas ignora edição vazia', () => {
+test('finalText prefers the edited one, but ignores an empty edit', () => {
   assert.equal(finalText({ msg: 'gerado' }, { text: 'editado' }), 'editado');
   assert.equal(finalText({ msg: 'gerado' }, { text: '   ' }), 'gerado');
   assert.equal(finalText({ msg: 'gerado' }, {}), 'gerado');
@@ -139,25 +139,25 @@ test('finalText prefere o editado, mas ignora edição vazia', () => {
 });
 
 // ─── guarda de dono ───────────────────────────────────────────────────────────
-test('sem dono declarado, recuso operar no CRM', () => {
+test('with no declared owner, it refuses to touch the CRM', () => {
   const r = assertOwned({ responsible_user_id: 1 }, null);
   assert.equal(r.ok, false);
   assert.match(r.error, /sem dono declarado/);
 });
 
-test('entidade de outro usuário é recusada', () => {
+test('an entity owned by another user is refused', () => {
   const r = assertOwned({ responsible_user_id: 999 }, 123, 'task 7');
   assert.equal(r.ok, false);
   assert.match(r.error, /pertence a outro usuário \(999\)/);
 });
 
-test('entidade do dono passa, e entidade ausente falha', () => {
+test('an entity owned by you passes, and a missing one fails', () => {
   assert.equal(assertOwned({ responsible_user_id: 123 }, 123).ok, true);
   assert.match(assertOwned(null, 123, 'lead 5').error, /lead 5 não encontrada/);
 });
 
-// ─── fim de sequência ─────────────────────────────────────────────────────────
-test('nextStepFor respeita o fim da cadência', () => {
+// ─── end of sequence ──────────────────────────────────────────────────────────
+test('nextStepFor respects the end of the cadence', () => {
   const cad = { FUP_5: { next: 'FUP_MAIS', days: 6 }, FUP_MAIS: { next: null, days: null } };
   assert.deepEqual(nextStepFor('FUP_5', cad), { next: 'FUP_MAIS', days: 6 });
   assert.equal(nextStepFor('FUP_MAIS', cad), null, 'último toque não cria próximo');
@@ -166,7 +166,7 @@ test('nextStepFor respeita o fim da cadência', () => {
 });
 
 // ─── escape ───────────────────────────────────────────────────────────────────
-test('escapeHtml cobre os cinco caracteres, não só o menor-que', () => {
+test('escapeHtml covers all five characters, not just the less-than', () => {
   assert.equal(escapeHtml('<script>"x"&\'y\'</script>'),
     '&lt;script&gt;&quot;x&quot;&amp;&#39;y&#39;&lt;/script&gt;');
   assert.equal(escapeHtml(null), '');

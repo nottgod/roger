@@ -15,48 +15,48 @@ function tmpFile(name, content) {
 }
 
 // ── parseDotEnv ───────────────────────────────────────────────────────────────
-test('parseDotEnv lê pares simples e ignora comentário e linha vazia', () => {
-  const out = parseDotEnv('# comentário\n\nKOMMO_TOKEN=abc\nEXA_KEY=def\n');
+test('parseDotEnv reads simple pairs and skips comments and blank lines', () => {
+  const out = parseDotEnv('# a comment\n\nKOMMO_TOKEN=abc\nEXA_KEY=def\n');
   assert.deepEqual(out, { KOMMO_TOKEN: 'abc', EXA_KEY: 'def' });
 });
 
-test('parseDotEnv aceita export, aspas e = dentro do valor', () => {
+test('parseDotEnv accepts export, quotes and = inside the value', () => {
   const out = parseDotEnv(`export A='x=y'\nB="z=w"\nC=p=q\n`);
   assert.equal(out.A, 'x=y');
   assert.equal(out.B, 'z=w');
   assert.equal(out.C, 'p=q');
 });
 
-test('parseDotEnv tira comentário à direita só fora de aspas', () => {
+test('parseDotEnv strips a trailing comment only outside quotes', () => {
   const out = parseDotEnv('A=valor # sobra\nB="com # dentro"\n');
   assert.equal(out.A, 'valor');
   assert.equal(out.B, 'com # dentro');
 });
 
-test('parseDotEnv ignora linha sem sinal de igual', () => {
+test('parseDotEnv ignores a line with no equals sign', () => {
   assert.deepEqual(parseDotEnv('LIXO\n'), {});
 });
 
 // ── parseLegacyJs ─────────────────────────────────────────────────────────────
-test('parseLegacyJs aceita os dois dialetos de aspas e de separador', () => {
+test('parseLegacyJs accepts both quote and separator dialects', () => {
   const out = parseLegacyJs(`const CONFIG = { KOMMO_TOKEN: 'abc', EXA_KEY: "def", FUNDABLE_KEY = 'ghi' };`);
   assert.equal(out.KOMMO_TOKEN, 'abc');
   assert.equal(out.EXA_KEY, 'def');
   assert.equal(out.FUNDABLE_KEY, 'ghi');
 });
 
-test('parseLegacyJs mantém a primeira ocorrência de uma chave repetida', () => {
+test('parseLegacyJs keeps the first occurrence of a repeated key', () => {
   const out = parseLegacyJs(`{ A: 'primeiro', A: 'segundo' }`);
   assert.equal(out.A, 'primeiro');
 });
 
-test('parseLegacyJs devolve objeto vazio para texto ausente', () => {
+test('parseLegacyJs returns an empty object for missing text', () => {
   assert.deepEqual(parseLegacyJs(null), {});
   assert.deepEqual(parseLegacyJs(''), {});
 });
 
-// ── precedência ───────────────────────────────────────────────────────────────
-test('env vence .env, que vence config.js', () => {
+// ── precedence ────────────────────────────────────────────────────────────────
+test('env beats .env, which beats config.js', () => {
   const envFile = tmpFile('.env', 'KOMMO_TOKEN=do-dotenv\nEXA_KEY=exa-do-dotenv\n');
   const legacyFile = tmpFile('config.js', `{ KOMMO_TOKEN: 'do-legado', EXA_KEY: 'exa-do-legado', FUNDABLE_KEY: 'fund-do-legado' }`);
 
@@ -70,7 +70,7 @@ test('env vence .env, que vence config.js', () => {
   assert.equal(cfg.origin.FUNDABLE_KEY, 'legacy');
 });
 
-test('chave ausente é null e a origem também, sem lançar', () => {
+test('a missing key is null, and so is its origin, without throwing', () => {
   const cfg = loadConfig({ env: {}, envFile: null, legacyFile: null });
   assert.equal(cfg.kommo.token, null);
   assert.equal(cfg.kommo.subdomain, null);
@@ -79,7 +79,7 @@ test('chave ausente é null e a origem também, sem lançar', () => {
   assert.equal(cfg.files.legacy, false);
 });
 
-test('arquivo inexistente não lança', () => {
+test('a file that does not exist does not throw', () => {
   const cfg = loadConfig({
     env: {},
     envFile: pathToFileURL('/caminho/que/nao/existe/.env'),
@@ -88,35 +88,35 @@ test('arquivo inexistente não lança', () => {
   assert.equal(cfg.keys.exaKey, null);
 });
 
-test('string vazia ou só espaço não conta como valor', () => {
+test('an empty or whitespace-only string does not count as a value', () => {
   const cfg = loadConfig({ env: { KOMMO_TOKEN: '   ', EXA_KEY: '' }, envFile: null, legacyFile: null });
   assert.equal(cfg.kommo.token, null);
   assert.equal(cfg.keys.exaKey, null);
 });
 
 // ── tipos derivados ───────────────────────────────────────────────────────────
-test('KOMMO_OWNER_ID vira número, e lixo vira null', () => {
+test('KOMMO_OWNER_ID becomes a number, and junk becomes null', () => {
   const ok = loadConfig({ env: { KOMMO_OWNER_ID: '99999999' }, envFile: null, legacyFile: null });
   assert.equal(ok.kommo.ownerId, 99999999);
   const ruim = loadConfig({ env: { KOMMO_OWNER_ID: 'eu-mesmo' }, envFile: null, legacyFile: null });
   assert.equal(ruim.kommo.ownerId, null);
 });
 
-test('ROGER_TZ tem default -3 e aceita negativo', () => {
+test('ROGER_TZ defaults to -3 and accepts a negative', () => {
   assert.equal(loadConfig({ env: {}, envFile: null, legacyFile: null }).roger.tz, -3);
   assert.equal(loadConfig({ env: { ROGER_TZ: '0' }, envFile: null, legacyFile: null }).roger.tz, 0);
   assert.equal(loadConfig({ env: { ROGER_TZ: '-5' }, envFile: null, legacyFile: null }).roger.tz, -5);
 });
 
 // ── mask ──────────────────────────────────────────────────────────────────────
-test('mask mostra só os 4 últimos caracteres', () => {
+test('mask shows only the last 4 characters', () => {
   assert.equal(mask('abcdefghijklmnop'), '********mnop');
   assert.equal(mask('abc'), '***');
   assert.equal(mask(''), null);
   assert.equal(mask(null), null);
 });
 
-test('mask nunca devolve o valor inteiro de um segredo longo', () => {
+test('mask never returns the whole value of a long secret', () => {
   const secret = 'super-secreto-1234';
   const masked = mask(secret);
   assert.ok(!masked.includes('super'));
@@ -124,7 +124,7 @@ test('mask nunca devolve o valor inteiro de um segredo longo', () => {
 });
 
 // ── specs ─────────────────────────────────────────────────────────────────────
-test('todo spec tem os campos que o .env.example e o doctor usam', () => {
+test('every spec has the fields .env.example and doctor rely on', () => {
   for (const spec of KEY_SPECS) {
     assert.equal(typeof spec.name, 'string');
     assert.equal(typeof spec.what, 'string');

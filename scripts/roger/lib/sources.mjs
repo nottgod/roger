@@ -1,21 +1,21 @@
 #!/usr/bin/env node
-// sources.mjs — coletores de baixo nível da camada Intelligence (Roger v5, F2).
+// sources.mjs — the low level collectors of the Intelligence layer.
 //
-// CORE PORTÁVEL: este módulo é uma cópia adaptada das funções de
-//   prospecção/enricher.js  (findWebsiteViaExa, scrapeWebsite→firecrawlScrape, extractFromContent→extractFromMarkdown)
-//   prospecção/sources/exa.js (enrichWithExa — reusado via re-export documentado abaixo)
-//   v1/background/background.js (fetchLeadsFromFundable + company detail + buildCompanyEntry → fundableLookup)
-// A duplicação é intencional: `prospecção/` é a camada lead-finder, separada do core Roger.
-// NÃO importar de prospecção/ aqui. Dívida documentada no design 2026-06-25-roger-v5-design.md.
+// PORTABLE CORE: this module is an adapted copy of collectors that lived in an earlier,
+// private lead-finder codebase (Exa search, Firecrawl scraping, a funding lookup). The
+// duplication is intentional: that layer is separate from the Roger core, and nothing
+// here imports from it. If you are reading this in the open repo, there is nothing
+// missing — this file is self contained.
 //
-// CONTRATO DE FALHA (invariante de todo o módulo):
-//   Nenhuma função LANÇA. Em erro/timeout/resposta inválida retornam null (objeto único)
-//   ou {} / [] (coleção). Quem chama trata ausência, não exceção.
 //
-// Injeção de fetch: cada função aceita opts.fetchImpl (default: globalThis.fetch).
-// Isso permite os testes mockarem rede sem tocar globals.
+// FAILURE CONTRACT (an invariant across the whole module):
+//   No function THROWS. On error, timeout or an invalid response they return null (for a
+//   single object) or {} / [] (for a collection). The caller handles absence, not exceptions.
 //
-// ESM, Node 24. Sem deps externas.
+// Injectable fetch: every function accepts opts.fetchImpl (default: globalThis.fetch).
+// That lets the tests mock the network without touching globals.
+//
+// ESM, Node 24. No external deps.
 
 const EXA_SEARCH = 'https://api.exa.ai/search';
 const FIRECRAWL_SCRAPE = 'https://api.firecrawl.dev/v1/scrape';
@@ -23,7 +23,7 @@ const FUNDABLE_BASE = 'https://www.tryfundable.ai/api/v1';
 
 const DEFAULT_TIMEOUT_MS = 15000;
 
-// fetch com timeout via AbortController; nunca lança (retorna null em falha).
+// fetch with a timeout via AbortController; never throws (returns null on failure).
 async function safeFetch(fetchImpl, url, init, timeoutMs) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs || DEFAULT_TIMEOUT_MS);
@@ -37,8 +37,8 @@ async function safeFetch(fetchImpl, url, init, timeoutMs) {
   }
 }
 
-// ── Exa: busca semântica genérica ───────────────────────────────────────────
-// origem: prospecção/sources/exa.js (padrão de POST x-api-key + contents.highlights)
+// ── Exa: generic semantic search ────────────────────────────────────────────
+// pattern: POST with x-api-key + contents.highlights
 export async function exaSearch(exaKey, query, opts = {}) {
   const fetchImpl = opts.fetchImpl || globalThis.fetch;
   if (!exaKey || !query) return { results: [] };
@@ -64,7 +64,7 @@ export async function exaSearch(exaKey, query, opts = {}) {
   }
 }
 
-// ── Exa: pain-point summary (porta de enrichWithExa de prospecção/sources/exa.js) ──
+// ── Exa: pain point summary ─────────────────────────────────────────────────
 export async function exaPainPoint(exaKey, companyName, website, opts = {}) {
   if (!exaKey || !companyName) return null;
   let includeDomains;
@@ -79,7 +79,7 @@ export async function exaPainPoint(exaKey, companyName, website, opts = {}) {
   return results?.[0]?.highlights?.join(' ') || null;
 }
 
-// ── Exa: descobrir website (porta de findWebsiteViaExa de prospecção/enricher.js) ──
+// ── Exa: find the website ───────────────────────────────────────────────────
 export async function findWebsiteViaExa(exaKey, companyName, opts = {}) {
   if (!exaKey || !companyName) return null;
   const { results } = await exaSearch(
@@ -90,7 +90,7 @@ export async function findWebsiteViaExa(exaKey, companyName, opts = {}) {
   return results?.[0]?.url || null;
 }
 
-// ── Firecrawl: scrape de site (porta de scrapeWebsite de prospecção/enricher.js) ──
+// ── Firecrawl: scrape a site ────────────────────────────────────────────────
 export async function firecrawlScrape(firecrawlKey, url, opts = {}) {
   const fetchImpl = opts.fetchImpl || globalThis.fetch;
   if (!firecrawlKey || !url) return {};
@@ -109,8 +109,8 @@ export async function firecrawlScrape(firecrawlKey, url, opts = {}) {
   }
 }
 
-// boilerplate = banner de cookie/privacidade/skip-nav OU lista de tags/stack
-// (>= 6 partes separadas por vírgula com média <= 2 palavras por parte = tokens curtos).
+// boilerplate = a cookie/privacy/skip-nav banner, OR a list of tags and stack
+// (>= 6 comma separated parts averaging <= 2 words each = short tokens).
 function isBoilerplate(p) {
   if (/cookie|we value your privacy|accept all|privacy policy|skip to (main )?content/i.test(p)) return true;
   const parts = p.split(',').map((s) => s.trim()).filter(Boolean);
@@ -121,8 +121,8 @@ function isBoilerplate(p) {
   return false;
 }
 
-// ── Extração heurística (porta fiel de extractFromContent de prospecção/enricher.js) ──
-// Retorna { linkedinCompany?, twitter?, teamSizeHint?, description?, country?, sector? }
+// ── Heuristic extraction ────────────────────────────────────────────────────
+// Returns { linkedinCompany?, twitter?, teamSizeHint?, description?, country?, sector? }
 export function extractFromMarkdown(content) {
   const result = {};
   if (!content) return result;
@@ -175,16 +175,16 @@ export function extractFromMarkdown(content) {
   return result;
 }
 
-// ── Fundable: lookup de UMA empresa por nome ─────────────────────────────────
-// origem: fetchLeadsFromFundable + GET /company/?id= + buildCompanyEntry (v1/background/background.js)
-// Adaptação: busca o deal mais recente que casa com o nome, depois detalha a company.
-// Retorna objeto enriquecido ou null. Nunca lança. SEM cache (cache é peça do
-// background.js que depende de chrome.storage — não portamos).
+// ── Funding: look up ONE company by name ────────────────────────────────────
+// Finds the most recent deal matching the name, then fetches the company detail.
+// Returns an enriched object or null. Never throws. NO cache (the cache in the original
+// depended on browser storage, so it was not ported).
+//
 export async function fundableLookup(fundableKey, { companyName, fetchImpl, timeoutMs } = {}) {
   const f = fetchImpl || globalThis.fetch;
   if (!fundableKey || !companyName) return null;
 
-  // 1) buscar deals recentes (filtro amplo cripto/web3/blockchain; o filtro fino é do score.mjs)
+  // 1) fetch recent deals (a broad filter; the fine grained one is score.mjs's job)
   const dealsRes = await safeFetch(f, `${FUNDABLE_BASE}/deals/`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${fundableKey}`, 'Content-Type': 'application/json' },
@@ -206,13 +206,13 @@ export async function fundableLookup(fundableKey, { companyName, fetchImpl, time
     return null;
   }
 
-  // 2) achar o deal cujo nome de company casa (normalizado)
+  // 2) find the deal whose company name matches (normalised)
   const target = normName(companyName);
   const match = deals.find((d) => d.company_name && normName(d.company_name) === target)
     || deals.find((d) => d.company_name && normName(d.company_name).includes(target));
   if (!match || !match.company_id) return null;
 
-  // 3) detalhar a company
+  // 3) fetch the company detail
   const compRes = await safeFetch(f, `${FUNDABLE_BASE}/company/?id=${match.company_id}`, {
     headers: { 'Authorization': `Bearer ${fundableKey}` },
   }, timeoutMs);
@@ -230,7 +230,7 @@ export async function fundableLookup(fundableKey, { companyName, fetchImpl, time
   return buildFundableEntry(company, match);
 }
 
-// porta de buildCompanyEntry + fundableStage (background.js), sem chrome deps
+// builds the company entry, with no browser deps
 function buildFundableEntry(c, deal) {
   return {
     name: c.name || null,

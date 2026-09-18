@@ -1,11 +1,11 @@
-// md.mjs — leitura de arquivo do context pack e parse de tabela markdown.
+// md.mjs — reading a context pack file, and parsing a markdown table.
 //
-// Por que existe: o padrão "a regra mora no .md, o código só lê" já estava provado no
-// gen.mjs, mas a função vivia lá dentro. Aqui ela fica compartilhada, para o score.mjs
-// poder ler o ICP sem importar o gerador.
+// Why it exists: the pattern "the rule lives in the .md, the code only reads it" was
+// already proven in gen.mjs, but the function lived inside it. Here it is shared, so
+// score.mjs can read the ICP without importing the generator.
 //
-// CONTRATO: nunca lança. Arquivo ausente devolve '' e fica registrado em missing(),
-// porque o problema nunca foi degradar — foi degradar em silêncio.
+// CONTRACT: it never throws. A missing file returns '' and is recorded in missing(),
+// because the problem was never degrading — it was degrading in silence.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,7 @@ import { join } from 'node:path';
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 export function activeContext(env = process.env) {
-  // Sem ROGER_CONTEXT declarado, vale o pacote de exemplo — que existe só para mostrar o formato.
+  // With no ROGER_CONTEXT declared, the example pack wins — it exists only to show the shape.
   return env.ROGER_CONTEXT || 'example';
 }
 
@@ -37,9 +37,9 @@ export function readContextFile(relPath, opts = {}) {
   }
 }
 
-// Extrai linhas de tabela (| a | b |) que aparecem DEPOIS do header que casa headerRe.
-// Ignora a linha separadora |---|. Para no primeiro bloco não-tabela depois de a tabela
-// ter começado. Devolve array de arrays de células (trim).
+// Pulls table rows (| a | b |) that appear AFTER the header matching headerRe. Skips the
+// separator row |---|. Stops at the first non-table block once the table has started.
+// Returns an array of arrays of cells (trimmed).
 export function parseTable(text, headerRe) {
   if (!text) return [];
   const section = headerRe ? (text.split(headerRe)[1] || '') : text;
@@ -53,7 +53,7 @@ export function parseTable(text, headerRe) {
   return rows;
 }
 
-// Tabela de duas colunas (chave | valor) → objeto. Chave vazia é ignorada.
+// A two column table (key | value) becomes an object. An empty key is ignored.
 export function parseKeyValueTable(text, headerRe) {
   const out = {};
   for (const row of parseTable(text, headerRe)) {

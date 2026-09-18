@@ -1,25 +1,25 @@
-// journal.mjs — a marca durável escrita ANTES do ato irreversível.
+// journal.mjs — the durable mark written BEFORE the irreversible act.
 //
-// Por que isto existe: mandar mensagem é irreversível. Se o processo morre entre o
-// envio e o registro, sem uma marca em disco ninguém sabe se a mensagem saiu — e a
-// rodada de amanhã manda de novo. Já aconteceu: três proteções contra duplicata
-// falharam juntas e o lead levou o mesmo toque duas vezes.
+// Why this exists: sending a message cannot be undone. If the process dies between the
+// send and the record, with no mark on disk nobody knows whether the message went out —
+// and tomorrow's run sends it again. It has happened: three duplicate guards failed
+// together and the lead got the same touch twice.
 //
-// Regras do desenho:
-//   1. Grava a INTENÇÃO antes, o desfecho depois. Intenção sem desfecho = pode ter saído.
-//   2. Uma linha por evento, escrita numa só chamada, com fsync. Sobrevive a kill -9 e
-//      nunca sai pela metade. Linha truncada por queda é ignorada na leitura.
-//   3. Sem rede. O ponto é ter a marca justamente quando o CRM está fora do ar.
-//   4. Quatro desfechos distintos, porque juntar estados opostos num rótulo é o defeito:
-//        registered      a máquina confirmou o registro
-//        register_failed saiu, mas o registro falhou
-//        resolved        um humano conferiu e fechou
-//        reconciled      a máquina fechou comparando com o CRM
-//        uncertain       clicou e a confirmação não veio — NÃO fecha
-//   5. O teto do dia sai DAQUI, não da task concluída no CRM: para um teto, errar para
-//      mais é o lado seguro.
+// Design rules:
+//   1. Write the INTENT first, the outcome after. Intent with no outcome = it may have gone.
+//   2. One line per event, written in a single call, with fsync. It survives kill -9 and
+//      never comes out half written. A line truncated by a crash is skipped on read.
+//   3. No network. The whole point is having the mark exactly when the CRM is down.
+//   4. Four distinct outcomes, because collapsing opposite states into one label is the bug:
+//        registered      the machine confirmed the record
+//        register_failed it went out, but recording it failed
+//        resolved        a human checked and closed it
+//        reconciled      the machine closed it by comparing against the CRM
+//        uncertain       it was clicked and no confirmation came — does NOT close
+//   5. The daily cap comes from HERE, not from the task closed in the CRM: for a cap,
+//      erring on the high side is the safe side.
 //
-// NDJSON append-only, um arquivo por dia. ESM, sem deps.
+// Append-only NDJSON, one file per day. ESM, no deps.
 
 import { openSync, writeSync, fsyncSync, closeSync, mkdirSync, readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -34,8 +34,8 @@ export function dayKey(date = new Date(), tzOffsetHours = -3) {
   return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}`;
 }
 
-// Escrita durável: uma linha, um fsync. Mais lenta e é de propósito — o volume aqui é
-// dezenas de eventos por dia, e o que se compra é não perder a marca.
+// Durable write: one line, one fsync. Slower, and deliberately so — the volume here is
+// dozens of events a day, and what you buy is never losing the mark.
 function appendDurable(file, line) {
   const fd = openSync(file, 'a');
   try {
@@ -60,7 +60,7 @@ export function createJournal(opts = {}) {
     return event;
   };
 
-  // Lê um dia (ou todos). Linha inválida/truncada é ignorada, não derruba a leitura.
+  // Reads one day (or all). An invalid or truncated line is skipped, not fatal.
   const read = (date = null) => {
     const files = date
       ? [fileFor(date)]
@@ -70,7 +70,7 @@ export function createJournal(opts = {}) {
       if (!existsSync(file)) continue;
       for (const line of readFileSync(file, 'utf8').split('\n')) {
         if (!line.trim()) continue;
-        try { events.push(JSON.parse(line)); } catch { /* linha truncada por queda */ }
+        try { events.push(JSON.parse(line)); } catch { /* a line truncated by a crash */ }
       }
     }
     return events;
@@ -81,7 +81,7 @@ export function createJournal(opts = {}) {
     fileFor,
     read,
 
-    // ANTES do envio. Devolve o id que fecha esta intenção.
+    // BEFORE the send. Returns the id that closes this intent.
     declare({ id, identity, leadId, step, text, meta = {} }) {
       const at = clock().toISOString();
       const declaredId = id || `${dayKey(new Date(at), tz)}:${identity || 'unknown'}:${leadId ?? 'x'}:${step || 'x'}:${Date.now()}`;
@@ -92,7 +92,7 @@ export function createJournal(opts = {}) {
         identity: identity || null,
         leadId: leadId ?? null,
         step: step || null,
-        // Prévia, não a mensagem inteira: o suficiente para reconciliar depois.
+        // A preview, not the whole message: enough to reconcile later.
         preview: String(text || '').slice(0, 120),
         length: String(text || '').length,
         ...meta,
@@ -100,27 +100,27 @@ export function createJournal(opts = {}) {
       return declaredId;
     },
 
-    // DEPOIS. `state` tem de ser um dos CLOSERS, ou UNCERTAIN (que não fecha).
+    // AFTER. `state` has to be one of CLOSERS, or UNCERTAIN (which does not close).
     close(id, state, detail = {}) {
       if (!CLOSERS.includes(state) && state !== UNCERTAIN) {
-        throw new Error(`estado de fechamento inválido: ${state}`);
+        throw new Error(`invalid closing state: ${state}`);
       }
       return write({ at: clock().toISOString(), event: state, id, ...detail });
     },
 
-    // Intenções sem desfecho: podem ter saído. A rodada seguinte tira estes leads da fila.
+    // Intents with no outcome: they may have gone out. The next run drops these leads.
     pending() {
       const events = read();
       const declared = new Map();
       for (const e of events) {
         if (e.event === DECLARED) declared.set(e.id, e);
         else if (CLOSERS.includes(e.event)) declared.delete(e.id);
-        // UNCERTAIN de propósito NÃO remove: continua pendente.
+        // UNCERTAIN deliberately does NOT remove: it stays pending.
       }
       return [...declared.values()];
     },
 
-    // Teto do dia por IDENTIDADE que envia (a conta é o que se queima, não o dono do card).
+    // Daily cap per sending IDENTITY (the account is what gets burned, not the card owner).
     countToday(identity, date = clock()) {
       return read(date).filter((e) => e.event === DECLARED && (!identity || e.identity === identity)).length;
     },

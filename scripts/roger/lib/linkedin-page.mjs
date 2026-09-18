@@ -1,19 +1,19 @@
-// linkedin-page.mjs — a camada que dirige o navegador. Fina de propósito.
+// linkedin-page.mjs — the layer that drives the browser. Thin on purpose.
 //
-// Esta é a ÚNICA parte do braço de envio que não tem teste unitário, porque precisa de
-// um navegador e de uma sessão real. Por isso ela não decide nada: só olha a tela e
-// devolve dado simples, e quem decide é lib/send-gates.mjs, que é pura e testada.
-// Toda regra que puder descer para lá, desce.
+// This is the ONLY part of the sending arm without a unit test, because it needs a real
+// browser and a real session. That is why it decides nothing: it only looks at the screen
+// and returns plain data, and the deciding is done by lib/send-gates.mjs, which is pure
+// and tested. Any rule that can move down there, moves.
 //
-// Duas coisas herdadas de código que já rodou nesta casa, e que valem ouro:
-//   - ler `innerText` em vez de classe CSS. O LinkedIn troca os nomes de classe a cada
-//     deploy; o texto visível é estável.
-//   - digitar caractere por caractere com atraso aleatório, em vez de preencher o campo
-//     de uma vez (preencher de uma vez não habilita o botão de envio).
+// Two things inherited from code that has actually run, and that are worth gold:
+//   - read `innerText` instead of a CSS class. LinkedIn changes class names on every
+//     deploy; the visible text is stable.
+//   - type character by character with a random delay, instead of filling the field in
+//     one go (filling it at once does not enable the send button).
 //
-// Playwright é dependência OPCIONAL: o core da Roger roda sem dependência nenhuma, e
-// quem nunca vai enviar não deveria baixar um navegador. Se faltar, a mensagem diz o
-// que fazer.
+// Playwright is an OPTIONAL dependency: the Roger core runs with no dependencies at all,
+// and someone who will never send should not have to download a browser. If it is
+// missing, the message says what to do.
 
 export const BOX_SEL = [
   '.msg-form__contenteditable[contenteditable="true"]',
@@ -31,15 +31,15 @@ export async function loadPlaywright(importer = (m) => import(m)) {
     return pw.chromium ? pw : pw.default;
   } catch {
     throw new Error(
-      'o braço de envio precisa do Playwright, que não vem instalado de propósito '
-      + '(o core da Roger é zero-dependência).\n  Instale com:  npm i playwright && npx playwright install chromium',
+      'the sending arm needs Playwright, which is deliberately not installed '
+      + '(the Roger core has zero dependencies).\n  Install it with:  npm i playwright && npx playwright install chromium',
     );
   }
 }
 
-// Um diretório de perfil POR IDENTIDADE. Trocar de conta é trocar de diretório, e
-// identidade declarada sem diretório é ERRO — cair num perfil compartilhado seria
-// mandar mensagem pela conta de outra pessoa.
+// One profile directory PER IDENTITY. Switching accounts is switching directories, and a
+// declared identity with no directory is an ERROR — falling into a shared profile would
+// mean sending a message from someone else's account.
 export function profileDirFor(identity, baseDir) {
   const slug = String(identity || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-');
   if (!slug) throw new Error('sem identidade declarada: recuso abrir navegador sem saber qual conta vai falar');
@@ -58,9 +58,9 @@ export async function openBrowser({ identity, baseDir, headless = false, importe
   return { context, page, userDataDir };
 }
 
-// Guarda de sessão ASSIMÉTRICA: só barra quando AFIRMA ter visto tela de login.
-// DOM desconhecido, seletor sumido ou navegação falhada seguem — uma guarda que
-// fecha por seletor obsoleto não protege identidade nenhuma, só para a operação.
+// ASYMMETRIC session guard: it only blocks when it AFFIRMS having seen a login screen.
+// An unknown DOM, a missing selector or a failed navigation carry on — a guard that fails
+// closed on a stale selector protects no identity, it just stops the operation.
 export async function sessionLooksLoggedOut(page) {
   try {
     await page.goto('https://www.linkedin.com/feed/', { waitUntil: 'domcontentloaded' });
@@ -71,11 +71,11 @@ export async function sessionLooksLoggedOut(page) {
     ).catch(() => false);
     return !!hasLoginField;
   } catch {
-    return false; // não conseguir afirmar não é o mesmo que estar deslogado
+    return false; // failing to affirm is not the same as being logged out
   }
 }
 
-// O retrato da tela, em dado simples: é isto que os portões recebem.
+// The snapshot of the screen, as plain data: this is what the gates receive.
 export async function snapshot(page, { limit = 30 } = {}) {
   const url = page.url();
   const data = await page.evaluate((n) => {
@@ -97,11 +97,11 @@ export async function snapshot(page, { limit = 30 } = {}) {
   }, limit).catch(() => null);
 
   if (!data) {
-    // Não conseguir ler a tela NÃO é tela vazia. `bubbles: null` faz o portão recusar.
+    // Failing to read the screen is NOT an empty screen. `bubbles: null` makes the gate refuse.
     return { url, bannerText: '', recipientName: null, isInMailComposer: false, hasMessageChannel: null, bubbles: null };
   }
 
-  // `sender` vazio = nossa mensagem (o LinkedIn só rotula a troca de autor).
+  // An empty `sender` = our own message (LinkedIn only labels the change of author).
   let lastFromMe = true;
   const bubbles = data.bubbles.map((b) => {
     if (b.sender) lastFromMe = false;
@@ -118,14 +118,14 @@ export async function snapshot(page, { limit = 30 } = {}) {
   };
 }
 
-// Digita e envia. Devolve FASE, que é a distinção que o journal precisa:
-//   pre-click   com certeza nada saiu (dá para fechar a intenção)
-//   post-click  pode ter saído; `confirmed` diz se a bolha apareceu
+// Types and sends. Returns the PHASE, which is the distinction the journal needs:
+//   pre-click   nothing went out, for certain (the intent can be closed)
+//   post-click  it may have gone out; `confirmed` says whether the bubble appeared
 export async function typeAndSend(page, text, { rand = Math.random } = {}) {
   try {
     await page.waitForSelector(BOX_SEL, { timeout: 12000 });
   } catch {
-    return { phase: 'pre-click', confirmed: false, why: 'campo de mensagem não apareceu' };
+    return { phase: 'pre-click', confirmed: false, why: 'the message field did not appear' };
   }
 
   const box = page.locator(BOX_SEL).first();
@@ -133,7 +133,7 @@ export async function typeAndSend(page, text, { rand = Math.random } = {}) {
     await box.click();
     await box.fill('');
     for (const char of text) {
-      // Enter envia: quebra de linha tem de ser Shift+Enter.
+      // Enter sends: a line break has to be Shift+Enter.
       if (char === '\n') await page.keyboard.press('Shift+Enter');
       else await page.keyboard.type(char, { delay: Math.floor(rand() * 18) + 8 });
     }
@@ -144,8 +144,8 @@ export async function typeAndSend(page, text, { rand = Math.random } = {}) {
   const btn = page.locator(SEND_SEL).first();
   const clickable = await btn.isVisible().catch(() => false) && await btn.isEnabled().catch(() => false);
   if (!clickable) {
-    // Botão desabilitado é validação de graça: o rascunho não está válido.
-    return { phase: 'pre-click', confirmed: false, why: 'botão de envio indisponível' };
+    // A disabled button is free validation: the draft is not valid.
+    return { phase: 'pre-click', confirmed: false, why: 'the send button was unavailable' };
   }
 
   try {
@@ -154,11 +154,11 @@ export async function typeAndSend(page, text, { rand = Math.random } = {}) {
     return { phase: 'pre-click', confirmed: false, why: `falha ao clicar: ${e.message}` };
   }
 
-  // Daqui em diante a mensagem PODE ter saído. Confirmar é reler a thread.
+  // From here on the message MAY have gone out. Confirming means re-reading the thread.
   await page.waitForTimeout(1500 + Math.floor(rand() * 600));
   const after = await snapshot(page).catch(() => null);
   const confirmed = !!after && Array.isArray(after.bubbles)
     && after.bubbles.some((b) => b.fromMe && b.text && text.slice(0, 60).toLowerCase().includes(b.text.slice(0, 60).toLowerCase()));
 
-  return { phase: 'post-click', confirmed, why: confirmed ? null : 'cliquei e a bolha não confirmou' };
+  return { phase: 'post-click', confirmed, why: confirmed ? null : 'clicked, and the bubble did not confirm' };
 }

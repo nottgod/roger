@@ -1,29 +1,29 @@
-// send-gates.mjs — as recusas, decididas por FUNÇÃO PURA.
+// send-gates.mjs — the refusals, decided by PURE FUNCTION.
 //
-// O braço de envio tem duas metades: uma que dirige o navegador e uma que decide. Esta
-// é a que decide, e ela não conhece Playwright: recebe um retrato da tela como dado
-// simples e devolve "manda" ou "não manda, por este motivo". É o que permite provar
-// cada recusa sem abrir navegador e sem tocar numa conta de LinkedIn.
+// The sending arm has two halves: one that drives the browser and one that decides. This
+// is the one that decides, and it knows nothing about Playwright: it takes a snapshot of
+// the screen as plain data and answers "send" or "do not send, for this reason". That is
+// what makes every refusal provable without opening a browser or touching a LinkedIn account.
 //
-// O retrato (snapshot):
+// The snapshot:
 // {
-//   url, bannerText,          // só o que a PLATAFORMA controla (ver detectBlock)
-//   hasMessageChannel: bool,  // existe caminho de mensagem no perfil
-//   isInMailComposer: bool,   // compositor pago (o lead não é mais conexão direta)
-//   recipientName,            // nome que a tela mostra como destinatário
-//   bubbles: [{ fromMe, text }]  // conversa, em ordem cronológica
+//   url, bannerText,          // only what the PLATFORM controls (see detectBlock)
+//   hasMessageChannel: bool,  // there is a way to message from this profile
+//   isInMailComposer: bool,   // the paid composer (the lead is no longer a direct connection)
+//   recipientName,            // the name the screen shows as the recipient
+//   bubbles: [{ fromMe, text }]  // the conversation, in chronological order
 // }
 //
-// Nenhuma função aqui lança.
+// No function here throws.
 
 const norm = (s) => String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 const refuse = (code, reason) => ({ ok: false, code, reason });
 const allow = () => ({ ok: true, code: null, reason: null });
 
-// ── sinal de bloqueio da plataforma ───────────────────────────────────────────
-// SÓ de região que a plataforma controla. A referência varria o texto inteiro da
-// página, e o texto do lead está nesse corpo: um lead que escrevesse "captcha"
-// derrubava a rodada inteira por falso positivo. Isso não se copia.
+// ── platform block signal ─────────────────────────────────────────────────────
+// ONLY from a region the platform controls. The reference implementation swept the whole
+// page text, and the lead's own words are in that body: a lead who wrote "captcha" took
+// down the entire run on a false positive. That is not worth copying.
 const BLOCK_PATTERNS = [
   /\/checkpoint\//i,
   /\/authwall/i,
@@ -42,10 +42,10 @@ export function detectBlock({ url = '', bannerText = '' } = {}) {
   return allow();
 }
 
-// ── destinatário ──────────────────────────────────────────────────────────────
-// Casa nome completo, não só o primeiro. A referência abria a conversa pelo primeiro
-// nome, o que manda para a pessoa errada quando há homônimo — e mandar para a pessoa
-// errada é o erro caro. Sem confirmação, recusa (falha fechada).
+// ── recipient ─────────────────────────────────────────────────────────────────
+// Matches the full name, not just the first. The reference opened the thread by first
+// name, which sends to the wrong person when two people share one — and sending to the
+// wrong person is the expensive mistake. With no confirmation, it refuses (fails closed).
 export function recipientMatches(expected, seen) {
   const e = norm(expected);
   const s = norm(seen);
@@ -58,23 +58,23 @@ export function recipientMatches(expected, seen) {
   return s.includes(first) && s.includes(last);
 }
 
-// ── estado da conversa ────────────────────────────────────────────────────────
-// Respondeu = existe mensagem dele DEPOIS do nosso primeiro toque. Não importa quem
-// mandou a última: o operador pode ter respondido de volta.
+// ── conversation state ────────────────────────────────────────────────────────
+// They replied = there is a message from them AFTER our first touch. It does not matter
+// who sent the last one: the operator may have written back.
 export function alreadyReplied(bubbles = []) {
   const firstMine = bubbles.findIndex((b) => b?.fromMe);
   if (firstMine === -1) return false;
   return bubbles.slice(firstMine + 1).some((b) => b && !b.fromMe);
 }
 
-// Ele escreveu primeiro: a thread começa com mensagem dele. Mandar pitch aqui foi
-// incidente real e determinístico — repetia todo dia até alguém notar.
+// They wrote first: the thread opens with a message from them. Pitching here was a real
+// and deterministic incident — it repeated every day until someone noticed.
 export function wroteFirst(bubbles = []) {
   const first = bubbles.find((b) => b && (b.fromMe === true || b.fromMe === false));
   return !!first && first.fromMe === false;
 }
 
-// Idempotência por CONTEÚDO: este texto já está na thread?
+// Idempotency by CONTENT: is this exact text already in the thread?
 export function isDuplicate(bubbles = [], text = '') {
   const t = norm(text);
   if (!t) return false;
@@ -82,8 +82,8 @@ export function isDuplicate(bubbles = [], text = '') {
   return bubbles.some((b) => b && norm(b.text).includes(short));
 }
 
-// ── a decisão ─────────────────────────────────────────────────────────────────
-// Ordem deliberada: o que é mais barato e mais grave primeiro.
+// ── the decision ──────────────────────────────────────────────────────────────
+// The order is deliberate: whatever is cheapest and most serious comes first.
 export function decide(snapshot = {}, touch = {}, opts = {}) {
   const s = snapshot;
 
@@ -131,17 +131,17 @@ export function decide(snapshot = {}, touch = {}, opts = {}) {
   return allow();
 }
 
-// ── ritmo ─────────────────────────────────────────────────────────────────────
-// A pausa é o anti-ban. O ganho do robô é de overhead, nunca de cadência: velocidade
-// não é licença para subir volume.
+// ── pacing ────────────────────────────────────────────────────────────────────
+// The pause is the anti-ban. What the robot buys you is overhead, never cadence: speed
+// is not a licence to raise volume.
 export function pauseMs(rand = Math.random, { minMs = 30_000, maxMs = 120_000 } = {}) {
   const lo = Math.min(minMs, maxMs);
   const hi = Math.max(minMs, maxMs);
   return Math.floor(lo + rand() * (hi - lo));
 }
 
-// Disjuntor: isolar lead a lead protege do defeito pontual, mas se o navegador morreu
-// você gasta a fila inteira produzindo o mesmo erro.
+// Circuit breaker: isolating lead by lead protects you from a one-off defect, but if the
+// browser died you will burn the whole queue producing the same error.
 export function createBreaker(limit = 3) {
   let streak = 0;
   return {

@@ -1,25 +1,25 @@
-// config.mjs — carregador ÚNICO de configuração.
+// config.mjs — the ONE config loader.
 //
-// Antes existiam três parsers divergentes do mesmo arquivo (kommo-config, intel, kpi),
-// com três precedências e dois dialetos de aspas. Este módulo é a fonte única.
+// There used to be three diverging parsers of the same file (kommo-config, intel, kpi),
+// with three precedence orders and two quoting dialects. This module is the single source.
 //
-// PRECEDÊNCIA (a primeira que tiver valor ganha):
-//   1. process.env          — o que o shell/CI define
-//   2. .env na raiz         — o caminho documentado para quem instala
-//   3. config.js na raiz    — legado (gitignored); segue lido para não quebrar instalação antiga
+// PRECEDENCE (the first one with a value wins):
+//   1. process.env          — whatever the shell or CI sets
+//   2. .env at the root     — the documented path for whoever installs
+//   3. config.js at the root — legacy (gitignored); still read so old installs keep working
 //
-// CONTRATO: nunca lança e NUNCA devolve segredo em log. Chave ausente = null, e quem
-// chama decide se aquilo era obrigatório. Para mostrar valor a um humano, use mask().
+// CONTRACT: it never throws and NEVER puts a secret in a log. A missing key is null, and
+// the caller decides whether that was required. To show a value to a human, use mask().
 //
-// Injetável para teste: loadConfig({ env, envFile, legacyFile }).
-// ESM, sem deps externas.
+// Injectable for tests: loadConfig({ env, envFile, legacyFile }).
+// ESM, no external deps.
 
 import { readFileSync } from 'node:fs';
 
 const ROOT = new URL('../../../', import.meta.url);
 
-// Cada chave que o projeto conhece, com o que o humano precisa saber para preenchê-la.
-// Serve de fonte para o .env.example e para o `doctor`.
+// Every key the project knows about, with what a human needs in order to fill it in.
+// It is the source for both .env.example and `doctor`.
 export const KEY_SPECS = [
   {
     name: 'KOMMO_TOKEN',
@@ -110,8 +110,8 @@ function readIf(url) {
   try { return readFileSync(url, 'utf8'); } catch { return null; }
 }
 
-// .env padrão: KEY=value, uma por linha. Aceita `export KEY=v`, comentários com #,
-// aspas simples/duplas e `=` dentro do valor. Linha sem `=` é ignorada.
+// Standard .env: KEY=value, one per line. Accepts `export KEY=v`, # comments, single and
+// double quotes, and `=` inside the value. A line without `=` is ignored.
 export function parseDotEnv(text) {
   const out = {};
   if (!text) return out;
@@ -125,14 +125,14 @@ export function parseDotEnv(text) {
     let value = clean.slice(eq + 1).trim();
     const quoted = /^(['"])([\s\S]*)\1$/.exec(value);
     if (quoted) value = quoted[2];
-    else value = value.replace(/\s+#.*$/, '').trim(); // comentário à direita só fora de aspas
+    else value = value.replace(/\s+#.*$/, '').trim(); // a trailing comment, only outside quotes
     if (name) out[name] = value;
   }
   return out;
 }
 
-// config.js legado: `const CONFIG = { KEY: 'v', OUTRA: "v" }`. Aceita `:` e `=`,
-// aspas simples e duplas — a união dos três dialetos que existiam antes.
+// Legacy config.js: `const CONFIG = { KEY: 'v', OTHER: "v" }`. Accepts `:` and `=`, single
+// and double quotes — the union of the three dialects that existed before.
 export function parseLegacyJs(text) {
   const out = {};
   if (!text) return out;
@@ -144,8 +144,8 @@ export function parseLegacyJs(text) {
   return out;
 }
 
-// Mostra um valor a um humano sem revelá-lo: só os 4 últimos caracteres.
-// Segredo curto vira '****' inteiro. null/'' vira null.
+// Shows a value to a human without revealing it: only the last 4 characters.
+// A short secret becomes '****' entirely. null/'' becomes null.
 export function mask(value) {
   if (value == null || value === '') return null;
   const s = String(value);
