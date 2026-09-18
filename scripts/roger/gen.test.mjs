@@ -57,8 +57,8 @@ test('approachStructure: Institucional -> quando vem do .md + estrutura 7.7 tem 
 
 // ── helpers: touchAngle ──
 test('touchAngle: FUP_2 troca de ângulo; FUP_MAIS última tentativa', () => {
-  assert.match(touchAngle('FUP_2').angle, /ângulo/i);
-  assert.match(touchAngle('FUP_MAIS').angle, /última tentativa/i);
+  assert.match(touchAngle('FUP_2').angle, /angle/i);
+  assert.match(touchAngle('FUP_MAIS').angle, /last try/i);
 });
 
 // ── helpers: voiceSnippets ──
@@ -104,7 +104,7 @@ test('outbound: QUENTE payments USA FUP_2 -> go=true, ângulo de troca, vocab do
   const b = buildGenerationBrief({ contact: { name: 'Jane', role: 'CEO', geo: 'USA' }, company: 'NorthPay', stage: 'FUP_2', mode: 'outbound', intel: intelReport({}) });
   assert.equal(b.go, true);
   assert.equal(b.mode, 'outbound');
-  assert.match(b.redacao.touchAngle.angle, /ângulo/i);
+  assert.match(b.redacao.touchAngle.angle, /angle/i);
   assert.match(b.diagnostic.vocab, /settlement|chargeback/i);
   assert.equal(b.culture.region, 'USA NY');
   assert.equal(b.redacao.charTarget.cap, 600);

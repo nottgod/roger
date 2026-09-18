@@ -106,36 +106,36 @@ const FALLBACK_VOCAB = {
 
 const STRUCTURE_77 = {
   elementos: [
-    'gancho específico (algo real e observado do lead, não genérico)',
-    'observação consultiva (diagnóstico leve, não pitch)',
-    'pergunta aberta (uma só, que força resposta)',
+    'a specific hook (something real you observed about them, not generic)',
+    'a consultative observation (a light diagnosis, not a pitch)',
+    'one open question (just one, and worth answering)',
   ],
   formato: [
-    'menos de 600 chars, 3 a 4 frases',
-    'sem saudação formal, sem fechamento corporativo',
-    "contrações (it's, you're, we've)",
-    '1 imperfeição humana deliberada (minúscula no início, typo leve, contração informal)',
+    'under 600 chars, three to four sentences',
+    'no formal greeting, no corporate sign-off',
+    "contractions (it's, you're, we've)",
+    'one deliberate human imperfection (a lowercase start, a light typo, an informal contraction)',
   ],
 };
 const FALLBACK_APPROACH = {
-  Provocativo: 'persona que responde a tese/posição forte (founder opinativo, degen-native)',
-  Case: 'persona que valida por prova social (CMO, Head of Growth)',
-  'Engajamento Contextual': 'lead postou algo recente, comentar/responder com substância',
-  Evento: 'lead vai a um evento onde você também estará',
-  Institucional: 'C-level senior, firm/family office, registro formal',
+  Provocativo: 'someone who responds to a strong opinion (an outspoken founder)',
+  Case: 'someone who validates by proof (a CMO, a Head of Growth)',
+  'Engajamento Contextual': 'they posted something recently — reply with substance',
+  Evento: 'they are going to an event you will also be at',
+  Institucional: 'senior C-level, a firm or family office, formal register',
 };
 
 // Só o ÂNGULO do toque. O intervalo (D+N) vem da cadência (fonte única: cadencia-funil.md via touchAngle).
 // Prospecção DIRETA: todo toque, exceto o handshake e o break-up, fecha chamando pro papo.
 const STAGE_ANGLE = {
-  MENSAGEM_INICIAL: 'primeiro toque DIRETO: gancho de 1 linha + o que você faz + CTA de call. Com campanha: handshake curto, sem pitch, sem pergunta',
-  connection: 'connection request: menos de 300 chars, sem pedido de call',
-  FUP_1: 'campanha: o pitch na mesma thread (contexto prometido + posicionamento + CTA de call). Sem campanha: curto, sem reintroduzir, fecha com CTA de call',
-  FUP_2: 'provocação com insight, TROCA DE ÂNGULO (não repetir a anterior) + CTA de call leve',
-  FUP_3: 'prova social (case/cliente concreto) + CTA de call',
-  FUP_4: 'chamada direta pra call de 15 min (ou troca de canal LinkedIn <-> Telegram)',
-  FUP_5: 'última fisgada, mescla abordagem + CTA de call',
-  FUP_MAIS: 'última tentativa honesta (break-up), porta aberta, sem pedir call (converte 5-10%)',
+  MENSAGEM_INICIAL: 'first touch, DIRECT: a one-line hook + what you do + ask for a call. With a campaign: a short handshake, no pitch, no question',
+  connection: 'connection request: under 300 chars, no call request',
+  FUP_1: 'with a campaign: the pitch in the same thread (the context you promised + positioning + ask for a call). Without one: short, no reintroduction, close by asking for a call',
+  FUP_2: 'a provocation with an insight, CHANGE THE ANGLE (do not repeat the last one) + a light ask for a call',
+  FUP_3: 'social proof (a concrete case or customer) + ask for a call',
+  FUP_4: 'a direct ask for a 15 minute call (or switch channel, LinkedIn <-> Telegram)',
+  FUP_5: 'last hook, mix the approach + ask for a call',
+  FUP_MAIS: 'the honest last try (break-up), door left open, no call request (converts 5-10%)',
 };
 
 // ── templates da mensagem ──────────────────────────────────────────────────────
@@ -143,9 +143,9 @@ const STAGE_ANGLE = {
 // genérico de propósito: o que a empresa faz é do contexto, não do motor.
 const MSGS_FILE = 'mensagens.md';
 const FALLBACK_TEMPLATES = {
-  M1: "Great to connect, {Nome}! I'll write to you shortly with some context on why I reached out.",
-  M2: '{Nome}, as promised, some context. {o que você faz, em uma frase}. Worth a quick call this week to see if it fits what you are building?',
-  M2_DIRETO: '{Nome}, {gancho específico de 1 linha}. {o que você faz, em uma frase}. Open to a quick call this week?',
+  M1: "Great to connect, {Name}! I'll write to you shortly with some context on why I reached out.",
+  M2: '{Name}, as promised, some context. {what you do, in one sentence}. Worth a quick call this week to see if it fits what you are building?',
+  M2_DIRETO: '{Name}, {a specific one-line hook}. {what you do, in one sentence}. Open to a quick call this week?',
 };
 const TEMPLATE_SECTION = { M1: /^m1\b/, M2: /^m2\s*—|^m2\s/, M2_DIRETO: /^m2-direto/ };
 
@@ -279,12 +279,12 @@ export function loadDorCentral() {
   return _dorCentral;
 }
 const BANNED_TO_WATCH = [
-  'agency / marketing services / growth consultancy (banidos de domínio)',
-  'em-dash (—), pipe (|), markdown vazando',
-  'jargão consultor (hook, framing, lift, circling back, make sense?, doing a lot of work)',
-  'métricas de vaidade (X impressions, X% engagement)',
-  'pedido de call em connection request (nota de CR)',
-  'saudação formal (Hey/Hi/Hello/Dear); múltiplas perguntas',
+  'agency / marketing services / growth consultancy (banned in this domain)',
+  'em dash (—), pipe (|), markdown leaking through',
+  'consultant jargon (hook, framing, lift, circling back, make sense?, doing a lot of work)',
+  'vanity metrics (X impressions, X% engagement)',
+  'asking for a call inside a connection request',
+  'formal greetings (Hey/Hi/Hello/Dear); more than one question',
 ];
 
 function charTargetFor(stage, templateKey = null) {
