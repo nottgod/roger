@@ -59,7 +59,7 @@ function wordRe(word) {
 export function checkPlaceholders(msg) {
   const lower = msg.toLowerCase();
   return PLACEHOLDERS.filter((p) => lower.includes(p))
-    .map((p) => err('placeholder', `placeholder não substituído: "${p}"`));
+    .map((p) => err('placeholder', `placeholder left unreplaced: "${p}"`));
 }
 
 export function checkMarkdownLeak(msg) {

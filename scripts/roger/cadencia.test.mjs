@@ -11,8 +11,8 @@ import { loadCadencia, nextValidDate, endOfDayBRT } from './cadencia.mjs';
 test('the sequence ENDS: FUP_MAIS does not chain into itself', () => {
   const { map } = loadCadencia();
   assert.ok(map.FUP_MAIS, 'FUP_MAIS existe no mapa');
-  assert.equal(map.FUP_MAIS.next, null, 'next null = fim de sequência');
-  assert.notEqual(map.FUP_MAIS.next, 'FUP_MAIS', 'auto-encadeamento é o bug');
+  assert.equal(map.FUP_MAIS.next, null, 'next null = end of sequence');
+  assert.notEqual(map.FUP_MAIS.next, 'FUP_MAIS', 'self-chaining is the bug');
 });
 
 test('no step points at itself', () => {
@@ -25,20 +25,20 @@ test('no step points at itself', () => {
 test('walking the cadence from the first message terminates, in at most 8 steps', () => {
   const { map } = loadCadencia();
   let stage = 'MENSAGEM_INICIAL';
-  let dias = 0;
+  let days = 0;
   const visitados = [];
   for (let i = 0; i < 20; i += 1) {
     const step = map[stage];
     if (!step || step.next == null) break;
-    dias += step.days;
+    days += step.days;
     visitados.push(stage);
     assert.ok(!visitados.includes(step.next), `ciclo detectado em ${step.next}`);
     stage = step.next;
   }
-  assert.equal(stage, 'FUP_MAIS', 'a caminhada tem que parar no último toque');
+  assert.equal(stage, 'FUP_MAIS', 'the walk has to stop at the last touch');
   assert.ok(visitados.length <= 8, `passos: ${visitados.length}`);
   // Six follow-ups over 28 days. The total up to the last touch cannot exceed that.
-  assert.ok(dias <= 28, `acumulado ${dias} dias, o encerramento declarado é D+28`);
+  assert.ok(days <= 28, `${days} days accumulated, the declared ending is D+28`);
 });
 
 // ─── parse do markdown ────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ test('the map covers the first message and the five follow-ups', () => {
   for (const k of ['MENSAGEM_INICIAL', 'FUP_1', 'FUP_2', 'FUP_3', 'FUP_4', 'FUP_5']) {
     assert.ok(map[k], `${k} faltando`);
     assert.equal(typeof map[k].days, 'number');
-    assert.ok(map[k].days > 0, `${k} com prazo inválido`);
+    assert.ok(map[k].days > 0, `${k} has an invalid due offset`);
   }
   assert.ok(['cadencia-funil.md', 'fallback'].includes(source));
 });

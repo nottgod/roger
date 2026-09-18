@@ -158,7 +158,7 @@ export function contextTemplate(key) {
       const lines = [];
       for (const line of sec.split('\n')) {
         if (/^\s*>/.test(line)) lines.push(line.replace(/^\s*>\s?/, ''));
-        else if (lines.length) break; // primeiro blockquote contíguo da seção
+        else if (lines.length) break; // the first contiguous blockquote of the section
       }
       const t = lines.join(' ').replace(/\s+/g, ' ').trim();
       if (t) return t;
@@ -181,8 +181,8 @@ export function templateKeyFor(stage, campanha) {
 // declared at all — and `voiceSnippets` says so when that is the case.
 const FALLBACK_VOICE_RULES = [
   'oral e direto, do jeito que a pessoa fala',
-  'uma pergunta só, aberta, que dá vontade de responder',
-  'tom diagnóstico, não venda: alguém que viu um detalhe, não um vendedor pedindo tempo',
+  'one question, open, the kind worth answering',
+  'a diagnostic tone, not a sale: someone who noticed a detail, not a seller asking for time',
 ];
 
 // ── pure helpers ──
@@ -201,7 +201,7 @@ export function cultureLookup(geo) {
   if (region === 'East Asia (JP/KR)') transversal.push(TRANSVERSAL.eastAsia);
   return {
     geo: geo || null,
-    region: region || '(geo não mapeado, default registro neutro)',
+    region: region || '(geo not mapped, defaulting to a neutral register)',
     registro: base ? base.registro : 'direct, bottom line first (geo not mapped)',
     abertura: base ? base.abertura : '',
     transversal,
@@ -237,12 +237,12 @@ export function approachStructure(approach) {
 
 export function touchAngle(stage) {
   const key = String(stage || '').trim();
-  const angle = STAGE_ANGLE[key] || STAGE_ANGLE[key.toUpperCase()] || '(stage não mapeado)';
+  const angle = STAGE_ANGLE[key] || STAGE_ANGLE[key.toUpperCase()] || '(stage not mapped)';
   let days = null; let next = null;
   try {
     const { map } = loadCadencia();
     if (map && map[key]) { days = map[key].days; next = map[key].next; }
-  } catch { /* no-throw: cadência tem fallback próprio */ }
+  } catch { /* never throws: the cadence has its own fallback */ }
   return { stage: key, angle, days, next };
 }
 
@@ -268,7 +268,7 @@ export function voiceSnippets(operator = DEFAULT_OPERATOR) {
 // ── the diagnosis layer ──
 // The core pain comes from the context (table `3.9.M` of diagnosis.md). The fallback
 // describes no business on purpose: it tells the person to write their own.
-const FALLBACK_DOR_CENTRAL = 'dor central não declarada — escreva a sua na tabela 3.9.M do diagnosis.md do seu contexto, em uma linha';
+const FALLBACK_DOR_CENTRAL = 'core pain not declared — write yours in table 3.9.M of your diagnosis.md, in one line';
 
 let _dorCentral = null;
 export function loadDorCentral() {
@@ -289,10 +289,10 @@ const BANNED_TO_WATCH = [
 
 function charTargetFor(stage, templateKey = null) {
   const s = String(stage || '').toLowerCase();
-  if (templateKey === 'M1') return { min: 60, max: 140, cap: 300 }; // handshake curtíssimo
+  if (templateKey === 'M1') return { min: 60, max: 140, cap: 300 }; // a very short handshake
   if (/connection|conex/.test(s)) return { min: 80, max: 300, cap: 300 };
   if (/inicial|mensagem_inicial|^mi$/.test(s)) return { min: 200, max: 450, cap: 600 };
-  if (templateKey === 'M2') return { min: 250, max: 450, cap: 600 }; // pitch pós-handshake
+  if (templateKey === 'M2') return { min: 250, max: 450, cap: 600 }; // the pitch after the handshake
   return { min: 80, max: 200, cap: 600 }; // FUP
 }
 
@@ -345,7 +345,7 @@ function buildOutboundBrief(input) {
       // from someone else's machine helps nobody.
       templatesFile: `rapport/contexts/${CONTEXT}/${MSGS_FILE}`,
       rule: campanha
-        ? 'campanha pré-pronta: usar o template (variar levemente, anti-blast). Cadência já semeada nos cards — NUNCA criar FUP nova'
+        ? 'a ready-made campaign: use the template (vary it slightly, anti-blast). The cadence is already seeded on the cards — NEVER create a new follow-up'
         : (taskText ? 'follow the task text (the card instruction wins)' : 'no card instruction: use the angle for this touch (direct by default on M1/M2, close by asking for a call)'),
     },
     company: company || intel.lead?.company || null,
@@ -383,22 +383,22 @@ function buildOutboundBrief(input) {
 // markdown cell separator.
 const FALLBACK_OBJECTIONS = [
   { key: 'agency', match: /(don'?t|do not|não)\s+(work with|trabalh\w*\s+com).{0,14}agenc|no agencies|sem agência/i,
-    reframe: 'Afirmar a categoria positiva do que você faz, sem repetir o termo que ele rejeitou. Conceder onde ele tem razão e contornar pelo lado.' },
+    reframe: 'State the positive category of what you do, without repeating the word they rejected. Concede where they are right and go around the side.' },
   { key: 'in-house', match: /in[\s-]?house|internal team|own (bd|team)|time interno|bd interno/i,
-    reframe: 'Não é substituição, é aceleração e cobertura. Perguntar o escopo antes de aceitar: quase sempre há um gap que o time interno não cobre.' },
+    reframe: 'It is not a replacement, it is speed and coverage. Ask about the scope before agreeing: there is almost always a gap the internal team does not cover.' },
   { key: 'price-early', match: /\b(price|pricing|cost|how much|quanto custa|preço)\b/i,
-    reframe: 'Reancorar no resultado ANTES do número. Não soltar preço sem ter estabelecido o que ele compra.' },
+    reframe: 'Re-anchor on the outcome BEFORE the number. Do not give a price before establishing what it buys.' },
   { key: 'send-proposal', match: /send (me )?(a )?proposal|just send|manda (a )?proposta/i,
-    reframe: 'Proposta sem contexto é genérica. Uma conversa curta primeiro, depois a proposta sob medida.' },
+    reframe: 'A proposal with no context is a generic proposal. A short conversation first, then one built for them.' },
   { key: 'think-about-it', match: /think about it|get back to you|vou pensar|depois eu vejo/i,
-    reframe: 'Sem próximo passo concreto vira frio em uma semana. Oferecer um passo específico, com data.' },
+    reframe: 'With no concrete next step it goes cold in a week. Offer a specific step, with a date.' },
 ];
 
 const FALLBACK_BANT = [
-  { key: 'need', sondar: 'o lead reconhece o problema que você resolve?' },
-  { key: 'authority', sondar: 'é ele que decide, ou precisa trazer outro decisor?' },
-  { key: 'budget', sondar: 'há sinal de budget compatível, sem cravar número cedo' },
-  { key: 'timeline', sondar: 'quando começaria (só quando o sinal já é positivo)' },
+  { key: 'need', sondar: 'does the lead recognise the problem you solve?' },
+  { key: 'authority', sondar: 'do they decide, or do they need to bring in someone else?' },
+  { key: 'budget', sondar: 'is there a sign of a workable budget, without naming a number early' },
+  { key: 'timeline', sondar: 'when it would start (only once the signal is already positive)' },
 ];
 
 let _objections = null;
@@ -413,7 +413,7 @@ export function loadObjections() {
     if (!key || /^key$/i.test(key) || !src || !reframe) continue;
     try {
       parsed.push({ key, match: new RegExp(src.split(';;').join('|'), 'i'), reframe });
-    } catch { /* padrão inválido no .md: ignora a linha em vez de derrubar a geração */ }
+    } catch { /* an invalid pattern in the .md: skip the row instead of breaking generation */ }
   }
   _objections = parsed.length ? parsed : FALLBACK_OBJECTIONS;
   return _objections;
@@ -435,7 +435,7 @@ function classifySignal(text) {
   if (!t) return 'unknown';
   if (/stop messaging|leave me alone|i said no|please respect|not interested at all|fuck off/.test(t)) return 'discard';
   if (/\b(price|pricing|how much|preço|quanto custa)\b/.test(t) || /just send|send me (a )?proposal|i'?ll think about it|think about it/.test(t)) return 'alert';
-  if (/we don'?t work with agenc|in[\s-]?house/.test(t)) return 'alert'; // objeção recuperável
+  if (/we don'?t work with agenc|in[\s-]?house/.test(t)) return 'alert'; // a recoverable objection
   // a polite refusal: NOT positive (the bare substring 'interested' used to hijack the signal). It is a warning, not a discard.
   if (/\b(not|no longer|never)\s+(interested|looking)\b|uninterested|not (a )?(good )?fit|sem interesse|n[ãa]o (tenho|temos|há) interesse/.test(t)) return 'alert';
   // referral = the lead hands you to the DECISION MAKER (a third party). Ambiguous verbs are anchored to the third
@@ -466,13 +466,13 @@ function pickVoiceRule(input, signal, objection, last) {
   const exchanges = thread.exchanges || (Array.isArray(thread.messages) ? thread.messages.length : 0);
   const l = (last || '').toLowerCase();
   if (signal === 'discard') return { rule: 'descarte-honesto', why: 'sinal de descarte: encerrar honesto, sem queimar a ponte' };
-  if (/i don'?t (quite )?understand|não entendi/.test(l)) return { rule: 'recovery', why: '"my bad, simpler:" + pergunta limpa, cortar jargão' };
+  if (/i don'?t (quite )?understand|não entendi/.test(l)) return { rule: 'recovery', why: '"my bad, simpler:" + a clean question, cut the jargon' };
   if (signal === 'referral') return { rule: 'referral-handoff', why: 'lead te passou pro decisor: agradece curto quem indicou e escreve a abertura quente pro indicado, citando quem indicou' };
-  if (objection) return { rule: 'conceder-reframe', why: 'objeção/discordância: conceder onde tem razão + reframe lateral; nunca defender o termo rejeitado' };
-  if (thread.leadAskedNextStep || /send me more|send more|happy to (chat|call|talk)|let'?s (call|talk|chat)|book a/.test(l)) return { rule: 'chefe-modo', why: 'lead pediu próximo passo: info concreta + 2-3 clientes + call' };
-  if (thread.substantiveNegotiation || /\b(scope|contract|sow|pricing breakdown|proposta detalhada|negocia)/.test(l)) return { rule: 'handoff', why: 'virou substantiva/negociação: o humano assume (handoff honesto)' };
+  if (objection) return { rule: 'conceder-reframe', why: 'an objection or disagreement: concede where they are right + reframe sideways; never defend the rejected word' };
+  if (thread.leadAskedNextStep || /send me more|send more|happy to (chat|call|talk)|let'?s (call|talk|chat)|book a/.test(l)) return { rule: 'chefe-modo', why: 'the lead asked for a next step: concrete information + 2-3 customers + a call' };
+  if (thread.substantiveNegotiation || /\b(scope|contract|sow|pricing breakdown|proposta detalhada|negocia)/.test(l)) return { rule: 'handoff', why: 'it turned substantive: the human takes over (an honest handoff)' };
   if (exchanges >= 6) return { rule: 'chefe-modo', why: '3+ trocas substantivas: chefe-modo natural' };
-  return { rule: 'socratic', why: 'primeira tese substantiva: devolver como pergunta (80-150 chars), não plantar credencial nem pedir call' };
+  return { rule: 'socratic', why: 'the first substantive point: hand it back as a question (80-150 chars), do not plant a credential or ask for a call' };
 }
 
 function buildConversationBrief(input) {
@@ -494,13 +494,13 @@ function buildConversationBrief(input) {
     signal, // positive | neutral | alert | discard | unknown
     objection, // {key, reframe} | null
     voiceRule, // {rule, why}
-    bant: { probe: loadBant(), regra: 'uma pergunta por vez, sem interrogatório' },
+    bant: { probe: loadBant(), regra: 'one question at a time, not an interrogation' },
     diagnostic: { dorCentral: loadDorCentral(), segment: intel.segment || null, narrativa: vocab.narrativa, vocab: vocab.vocab },
     culture: cultureLookup(contact.geo),
     voice: voiceSnippets(input.operator || DEFAULT_OPERATOR),
     contextFile: join(PACK, 'conversation.md'),
     rawFacts: groundFacts(intel),
-    note: 'conversation NÃO cria task no Kommo (gerente sobe a cadência). Lint stage="conversation".',
+    note: 'conversation mode does NOT create a task in the CRM (a human moves the cadence). Lint stage="conversation".',
   };
 }
 

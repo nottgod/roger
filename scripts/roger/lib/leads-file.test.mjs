@@ -140,9 +140,9 @@ test('invalid JSON returns a readable error and no exception', () => {
 });
 
 test('a missing file returns an error, it does not throw', () => {
-  const r = readLeadsFile('/caminho/que/nao/existe.csv');
+  const r = readLeadsFile('/path/that/does/not/exist.csv');
   assert.equal(r.leads.length, 0);
-  assert.match(r.errors[0], /não consegui abrir/);
+  assert.match(r.errors[0], /could not open/);
 });
 
 test('the format comes from the file extension', () => {

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { runIntel, detectSignals, collectIntel } from './intel.mjs';
 
 const KEYS = { exaKey: 'fake', fundableKey: 'fake', firecrawlKey: 'fake' };
-const recentISO = new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(); // ~2 meses atrás
+const recentISO = new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(); // ~2 months ago
 
 // a factory of mocked deps
 function mockDeps(over = {}) {
@@ -59,9 +59,9 @@ test('(c) collection fails (the APIs return null) → the report degrades withou
   const r = await runIntel(lead, KEYS, deps);
   // it must not throw; the sources mark failure or skip
   assert.equal(r.sources.fundable, 'fail');
-  assert.equal(r.sources.firecrawl, 'skip'); // sem website, não chega no Firecrawl
+  assert.equal(r.sources.firecrawl, 'skip'); // with no website, it never reaches Firecrawl
   assert.equal(r.sources.exa, 'fail');
-  assert.ok(['QUENTE', 'MORNO', 'FRIO'].includes(r.tier)); // ICP ok via lead → não DESCARTE
+  assert.ok(['QUENTE', 'MORNO', 'FRIO'].includes(r.tier)); // ICP fine via the lead → not a DISCARD
 });
 
 test('detectSignals: with no data it invents no objective signals', () => {

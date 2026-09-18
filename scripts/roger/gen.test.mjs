@@ -24,7 +24,7 @@ test('cultureLookup: Japan -> East Asia + the patience note', () => {
 
 test('cultureLookup: an unknown geo does not crash, it marks it unmapped', () => {
   const c = cultureLookup('Atlantis');
-  assert.match(c.region, /não mapeado/i);
+  assert.match(c.region, /not mapped/i);
   assert.ok(typeof c.registro === 'string' && c.registro.length > 0);
 });
 
@@ -136,7 +136,7 @@ function convInput(lastLeadMsg, over = {}) {
 test('conversation: an objection from the context -> a reframe from the context, go=true', () => {
   const b = buildGenerationBrief(convInput('we already have a tool for that'));
   assert.equal(b.objection.key, 'has-tool');
-  assert.match(b.objection.reframe, /por mão|by hand|mão/i);
+  assert.match(b.objection.reframe, /by hand/i);
   assert.equal(b.go, true);
   assert.equal(b.voiceRule.rule, 'conceder-reframe');
 });
@@ -144,7 +144,7 @@ test('conversation: an objection from the context -> a reframe from the context,
 test('conversation: the build-it-in-house objection -> the maintenance reframe', () => {
   const b = buildGenerationBrief(convInput('we would rather build it in house'));
   assert.equal(b.objection.key, 'build-it');
-  assert.match(b.objection.reframe, /maint|mantém|manuten/i);
+  assert.match(b.objection.reframe, /maint/i);
   assert.equal(b.voiceRule.rule, 'conceder-reframe');
 });
 
@@ -174,7 +174,7 @@ test('conversation: i-dont-understand -> recovery', () => {
 test('conversation: it carries the catalogue (contextFile) and the do-not-create-a-task note', () => {
   const b = buildGenerationBrief(convInput('interesting, tell me more'));
   assert.match(b.contextFile, /conversation\.md$/);
-  assert.match(b.note, /NÃO cria task/i);
+  assert.match(b.note, /does NOT create a task|no task/i);
   assert.ok(Array.isArray(b.bant.probe) && b.bant.probe.length === 4);
 });
 

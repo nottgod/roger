@@ -48,7 +48,7 @@ test('--lead accepts JSON', () => {
 });
 
 test('--lead with broken JSON explains, it does not blow up', () => {
-  const { lead, error } = resolveLead({ leadJson: '{isto não é json' });
+  const { lead, error } = resolveLead({ leadJson: '{this is not json' });
   assert.equal(lead, null);
   assert.match(error, /not valid JSON/);
 });
@@ -73,7 +73,7 @@ test('with neither --lead nor --file, it says what to pass', () => {
 });
 
 test('an unreadable spreadsheet returns the reader error, not an exception', () => {
-  const { lead, error } = resolveLead({ file: '/caminho/que/nao/existe.csv' });
+  const { lead, error } = resolveLead({ file: '/path/that/does/not/exist.csv' });
   assert.equal(lead, null);
-  assert.match(error, /não consegui abrir/);
+  assert.match(error, /could not open/);
 });

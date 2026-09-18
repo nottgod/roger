@@ -216,7 +216,7 @@ export function readLeadsFile(path, opts = {}) {
   try {
     text = readFileSync(path, 'utf8');
   } catch (e) {
-    return { leads: [], errors: [`não consegui abrir ${path}: ${e.code || e.message}`], warnings: [], source: format, columnsIgnored: [] };
+    return { leads: [], errors: [`could not open ${path}: ${e.code || e.message}`], warnings: [], source: format, columnsIgnored: [] };
   }
   return { ...readLeads({ text, format }), path };
 }

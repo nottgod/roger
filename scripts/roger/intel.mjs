@@ -135,7 +135,7 @@ export function detectSignals(collected, lead = {}) {
     'noRecentActivity (quiet in public — needs a human eye on the profile)',
     'founderInvisible (the owner of the problem does not show up)',
     'inconsistentStory (o que o site diz versus o que a pessoa diz)',
-    'genericMessaging (a mensagem deles não diz nada de específico)',
+    'genericMessaging (their own messaging says nothing specific)',
   ];
 
   // strip undefined keys (they must not become true or false in the score shape)
