@@ -1,0 +1,14 @@
+{
+  "date": "2026-06-25",
+  "title": "lint conversation pass fixture",
+  "leads": [
+    {
+      "n": 1, "co": "NorthPay", "stage": "conversation",
+      "msg": "yeah that tracks. is that vastness coming from your team actively telling the story, or more word of mouth off the products already live?"
+    },
+    {
+      "n": 2, "co": "KapitalFO", "stage": "conversation",
+      "msg": "fair point, pros run on contracts and risk data. but they still have to find the issuer first. how do your LPs discover deals today, inbound or your own network?"
+    }
+  ]
+}

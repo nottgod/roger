@@ -1,0 +1,14 @@
+{
+  "date": "2026-06-25",
+  "title": "lint fail fixture",
+  "leads": [
+    {
+      "n": 1, "co": "BadCo", "stage": "MENSAGEM_INICIAL",
+      "msg": "Hey there, I hope this finds you well. We are a marketing agency that drove 14M impressions and would love a quick call. Does that make sense?"
+    },
+    {
+      "n": 2, "co": "FupSign", "stage": "FUP_3",
+      "msg": "just checking in on my last note, would be great to explore synergies. Best, Sam"
+    }
+  ]
+}

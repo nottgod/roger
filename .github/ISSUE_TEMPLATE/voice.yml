@@ -1,0 +1,43 @@
+name: It did not sound like me
+description: Roger wrote something you would never have written. This is the most valuable report in the project.
+labels: ["voice"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This one matters more than any bug. The engine is tested; the voice is not
+        testable — only you know what you would have written.
+
+        **Mask the lead.** `Ana at <a fintech>` is enough. Nobody who did not agree to be
+        here should be named here.
+  - type: textarea
+    id: draft
+    attributes:
+      label: What Roger wrote
+      description: Paste the draft, masked.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: yours
+    attributes:
+      label: What you would have written instead
+      description: Even roughly. The difference between these two boxes is the whole report.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong with it, in your words
+      description: Too formal? A word you never use? Right words, wrong order? Sounds like a tool?
+    validations:
+      required: true
+  - type: textarea
+    id: persona
+    attributes:
+      label: The relevant part of your persona.md
+      description: |
+        Optional, and often the answer. If your voice file already says the thing Roger
+        ignored, that is a bug in the code. If it does not, that is a bug in the interview.
+      render: markdown

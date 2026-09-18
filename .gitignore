@@ -1,0 +1,23 @@
+# Secrets — NUNCA commitar
+config.js
+.env
+
+# Node
+node_modules/
+
+# Runtime / logs
+scripts/roger/logs/
+*.log
+
+# Batches de envio (efêmeros)
+batch-*.json
+
+# Dados de lead e estado local — NUNCA versionar
+.roger/
+journal/
+briefing-*.md
+chrome-profile-*/
+playwright-profile-*/
+
+# macOS
+.DS_Store

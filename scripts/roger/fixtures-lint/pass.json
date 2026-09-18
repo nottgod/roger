@@ -1,0 +1,14 @@
+{
+  "date": "2026-06-25",
+  "title": "lint pass fixture",
+  "leads": [
+    {
+      "n": 1, "co": "AcmeRWA", "stage": "FUP_2",
+      "msg": "saw the custody audit you shipped last week, sharp move for an RWA play. are emerging market allocators actually pulling tokenized private credit yet, or still mostly waiting on the regulated wrapper?"
+    },
+    {
+      "n": 2, "co": "MidInfra", "stage": "MENSAGEM_INICIAL",
+      "msg": "your docs read like a team that ships, rare in infra. how are you thinking about getting devs to notice before the next release window closes?"
+    }
+  ]
+}

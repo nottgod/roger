@@ -1,0 +1,39 @@
+name: Something broke
+description: A command failed, or did something other than what it said it would.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **No keys, no real leads.** Mask names before pasting anything.
+  - type: input
+    id: step
+    attributes:
+      label: Where you were
+      description: The step number in SETUP.md, or the command you ran.
+      placeholder: "step 5, or: npm run draft -- --file leads.csv"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: What it printed
+      description: The error, or the surprising output. Paste it whole if it is short.
+      render: shell
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `npm run doctor`
+      description: It reports what is configured, never the values. Safe to paste.
+      render: shell
+  - type: input
+    id: node
+    attributes:
+      label: Node version and OS
+      placeholder: "node v22.11.0, macOS 15"

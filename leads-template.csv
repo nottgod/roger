@@ -1,0 +1,4 @@
+name,company,role,linkedin,website,country,segment,headcount,budget,recentFunding,hiringForTheProblem,notes
+Ana Ribeiro,NorthPay,Head of Finance,https://linkedin.com/in/example,https://northpay.example,Singapore,payments,90,6k,no,yes,met at the payments meetup; closing books takes her team four days
+Sam Okafor,Truleaf,Head of Operations,https://linkedin.com/in/example2,https://truleaf.example,United States,marketplaces,140,4k,yes,yes,raised a seed round last month and is hiring a controller
+Dana Whitfield,Kestrel,CFO,https://linkedin.com/in/example3,https://kestrel.example,United Kingdom,neobanks,12,800,no,no,two people and one bank account — under the ICP floor on purpose
